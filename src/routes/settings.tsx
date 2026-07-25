@@ -86,7 +86,7 @@ function SettingsPage() {
         <Row
           icon={<ShieldCheck className="h-5 w-5 text-foreground/80" />}
           label="Privacy Policy"
-          onClick={() => setInfoDialog("privacy")}
+          onClick={() => navigate({ to: "/privacy-policy" })}
         />
         <Row
           icon={<ShieldOff className="h-5 w-5 text-foreground/80" />}
