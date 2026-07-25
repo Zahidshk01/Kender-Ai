@@ -126,8 +126,6 @@ function SettingsPage() {
           <a href="mailto:support@kender.app" className="text-primary underline">support@kender.app</a>.</p>} />
       <InfoDialog open={infoDialog === "terms"} onClose={() => setInfoDialog(null)} title="Terms of Service"
         body={<p>By using Kender you agree to use the app respectfully. Characters are fictional. Do not share content that violates laws or the rights of others. Full terms coming soon.</p>} />
-      <InfoDialog open={infoDialog === "privacy"} onClose={() => setInfoDialog(null)} title="Privacy Policy"
-        body={<p>We respect your privacy. Your chats and characters stay yours. We only store the data required to run your account.</p>} />
       <InfoDialog open={infoDialog === "version"} onClose={() => setInfoDialog(null)} title="App Version"
         body={<p>Kender {APP_VERSION}</p>} />
 
