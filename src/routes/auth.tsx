@@ -8,10 +8,7 @@ import ghost from "@/assets/kender-ghost.png";
 
 export const Route = createFileRoute("/auth")({
   head: () => ({
-    meta: [
-      { title: "Sign in · Kender" },
-      { name: "description", content: "Chat with AI Characters on Kender." },
-    ],
+    meta: [{ title: "Sign in · Kender" }, { name: "description", content: "Chat with AI Characters on Kender." }],
   }),
   component: AuthPage,
 });
@@ -67,7 +64,6 @@ function AuthPage() {
     navigate({ to: "/", replace: true });
   };
 
-
   const disabled = !confirmed;
 
   return (
@@ -91,17 +87,9 @@ function AuthPage() {
 
       {/* Logo + brand */}
       <div className="relative z-10 mt-16 flex flex-1 flex-col items-center">
-        <img
-          src={ghost}
-          alt="Kender"
-          width={120}
-          height={120}
-          className="h-28 w-28 object-contain"
-        />
-        <h1 className="mt-3 text-6xl font-extrabold tracking-tight lowercase">
-          kender
-        </h1>
-        <p className="mt-2 text-lg text-white/60">Chat with AI Characters</p>
+        <img src={ghost} alt="Kender" width={120} height={120} className="h-28 w-28 object-contain" />
+        <h1 className="mt-3 text-6xl font-extrabold tracking-tight lowercase">kender</h1>
+        <p className="mt-2 text-lg text-white/60">Chat with AI</p>
       </div>
 
       {/* Actions */}
@@ -113,9 +101,7 @@ function AuthPage() {
         >
           <span
             className={`flex h-6 w-6 items-center justify-center rounded-full border ${
-              confirmed
-                ? "border-primary bg-primary text-primary-foreground"
-                : "border-white/40"
+              confirmed ? "border-primary bg-primary text-primary-foreground" : "border-white/40"
             }`}
           >
             {confirmed && <Check className="h-4 w-4" strokeWidth={3} />}
@@ -129,11 +115,7 @@ function AuthPage() {
           disabled={disabled || busy !== null}
           className="flex w-full items-center justify-center gap-3 rounded-full bg-white px-5 py-4 text-base font-semibold text-black disabled:opacity-40"
         >
-          {busy === "apple" ? (
-            <Loader2 className="h-5 w-5 animate-spin" />
-          ) : (
-            <AppleIcon />
-          )}
+          {busy === "apple" ? <Loader2 className="h-5 w-5 animate-spin" /> : <AppleIcon />}
           Continue with Apple
         </button>
 
@@ -143,20 +125,15 @@ function AuthPage() {
           disabled={disabled || busy !== null}
           className="flex w-full items-center justify-center gap-3 rounded-full bg-white px-5 py-4 text-base font-semibold text-black disabled:opacity-40"
         >
-          {busy === "google" ? (
-            <Loader2 className="h-5 w-5 animate-spin" />
-          ) : (
-            <GoogleIcon />
-          )}
+          {busy === "google" ? <Loader2 className="h-5 w-5 animate-spin" /> : <GoogleIcon />}
           Continue with Google
         </button>
 
         <p className="pt-3 text-center text-xs leading-relaxed text-white/50">
           Companion chatbots may not be suitable for some minors.
           <br />
-          By continuing, you confirm you are 18 years of age or older and agree
-          to our <span className="underline">Terms of Use</span> and{" "}
-          <span className="underline">Privacy Policy</span>
+          By continuing, you confirm you are 18 years of age or older and agree to our{" "}
+          <span className="underline">Terms of Use</span> and <span className="underline">Privacy Policy</span>
         </p>
       </div>
     </div>
@@ -174,10 +151,22 @@ function AppleIcon() {
 function GoogleIcon() {
   return (
     <svg viewBox="0 0 24 24" className="h-5 w-5" aria-hidden>
-      <path fill="#4285F4" d="M23.49 12.27c0-.79-.07-1.54-.2-2.27H12v4.51h6.44c-.28 1.48-1.12 2.73-2.39 3.57v2.97h3.86c2.26-2.09 3.58-5.16 3.58-8.78z" />
-      <path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.94l-3.86-2.97c-1.07.72-2.44 1.15-4.07 1.15-3.13 0-5.78-2.11-6.73-4.96H1.29v3.09C3.26 21.3 7.31 24 12 24z" />
-      <path fill="#FBBC05" d="M5.27 14.28A7.2 7.2 0 0 1 4.89 12c0-.79.14-1.56.38-2.28V6.63H1.29A11.99 11.99 0 0 0 0 12c0 1.94.47 3.77 1.29 5.37l3.98-3.09z" />
-      <path fill="#EA4335" d="M12 4.77c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.31 0 3.26 2.7 1.29 6.63l3.98 3.09C6.22 6.88 8.87 4.77 12 4.77z" />
+      <path
+        fill="#4285F4"
+        d="M23.49 12.27c0-.79-.07-1.54-.2-2.27H12v4.51h6.44c-.28 1.48-1.12 2.73-2.39 3.57v2.97h3.86c2.26-2.09 3.58-5.16 3.58-8.78z"
+      />
+      <path
+        fill="#34A853"
+        d="M12 24c3.24 0 5.95-1.08 7.93-2.94l-3.86-2.97c-1.07.72-2.44 1.15-4.07 1.15-3.13 0-5.78-2.11-6.73-4.96H1.29v3.09C3.26 21.3 7.31 24 12 24z"
+      />
+      <path
+        fill="#FBBC05"
+        d="M5.27 14.28A7.2 7.2 0 0 1 4.89 12c0-.79.14-1.56.38-2.28V6.63H1.29A11.99 11.99 0 0 0 0 12c0 1.94.47 3.77 1.29 5.37l3.98-3.09z"
+      />
+      <path
+        fill="#EA4335"
+        d="M12 4.77c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.31 0 3.26 2.7 1.29 6.63l3.98 3.09C6.22 6.88 8.87 4.77 12 4.77z"
+      />
     </svg>
   );
 }
