@@ -166,7 +166,8 @@ function AuthGate({ children }: { children: ReactNode }) {
       </div>
     );
   }
-  if (!session && pathname !== "/auth") return null;
+  const publicPaths = ["/auth", "/privacy-policy"];
+  if (!session && !publicPaths.includes(pathname)) return null;
   return <>{children}</>;
 }
 
