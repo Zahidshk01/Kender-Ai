@@ -146,7 +146,8 @@ function AuthGate({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (loading) return;
-    if (!session && pathname !== "/auth") {
+    const publicPaths = ["/auth", "/privacy-policy"];
+    if (!session && !publicPaths.includes(pathname)) {
       router.navigate({ to: "/auth", replace: true });
     }
   }, [session, loading, pathname, router]);
