@@ -13,14 +13,12 @@ export const Route = createFileRoute("/privacy-policy")({
 });
 
 function PrivacyPolicyPage() {
-  const navigate = useNavigate();
-
   return (
     <div className="safe-top min-h-screen bg-background">
       {/* Header */}
       <div className="sticky top-0 z-20 flex items-center justify-between border-b border-border/40 bg-background/95 px-2 py-3 backdrop-blur">
         <button
-          onClick={() => navigate({ to: "/settings" })}
+          onClick={() => window.history.back()}
           aria-label="Back"
           className="rounded-full p-2 active:bg-surface"
         >
