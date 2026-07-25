@@ -173,6 +173,6 @@ function AuthGate({ children }: { children: ReactNode }) {
 
 function BottomNavGate() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
-  if (pathname === "/auth") return null;
+  if (pathname === "/auth" || pathname === "/privacy-policy") return null;
   return <BottomNav />;
 }
