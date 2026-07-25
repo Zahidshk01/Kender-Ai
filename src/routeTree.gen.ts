@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as SearchRouteImport } from './routes/search'
 import { Route as ProfileRouteImport } from './routes/profile'
+import { Route as PrivacyPolicyRouteImport } from './routes/privacy-policy'
 import { Route as PremiumRouteImport } from './routes/premium'
 import { Route as NotificationsRouteImport } from './routes/notifications'
 import { Route as CreateRouteImport } from './routes/create'
@@ -40,6 +41,11 @@ const SearchRoute = SearchRouteImport.update({
 const ProfileRoute = ProfileRouteImport.update({
   id: '/profile',
   path: '/profile',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PrivacyPolicyRoute = PrivacyPolicyRouteImport.update({
+  id: '/privacy-policy',
+  path: '/privacy-policy',
   getParentRoute: () => rootRouteImport,
 } as any)
 const PremiumRoute = PremiumRouteImport.update({
@@ -122,6 +128,7 @@ export interface FileRoutesByFullPath {
   '/create': typeof CreateRoute
   '/notifications': typeof NotificationsRoute
   '/premium': typeof PremiumRoute
+  '/privacy-policy': typeof PrivacyPolicyRoute
   '/profile': typeof ProfileRoute
   '/search': typeof SearchRoute
   '/settings': typeof SettingsRoute
@@ -141,6 +148,7 @@ export interface FileRoutesByTo {
   '/create': typeof CreateRoute
   '/notifications': typeof NotificationsRoute
   '/premium': typeof PremiumRoute
+  '/privacy-policy': typeof PrivacyPolicyRoute
   '/profile': typeof ProfileRoute
   '/search': typeof SearchRoute
   '/settings': typeof SettingsRoute
@@ -161,6 +169,7 @@ export interface FileRoutesById {
   '/create': typeof CreateRoute
   '/notifications': typeof NotificationsRoute
   '/premium': typeof PremiumRoute
+  '/privacy-policy': typeof PrivacyPolicyRoute
   '/profile': typeof ProfileRoute
   '/search': typeof SearchRoute
   '/settings': typeof SettingsRoute
@@ -182,6 +191,7 @@ export interface FileRouteTypes {
     | '/create'
     | '/notifications'
     | '/premium'
+    | '/privacy-policy'
     | '/profile'
     | '/search'
     | '/settings'
@@ -201,6 +211,7 @@ export interface FileRouteTypes {
     | '/create'
     | '/notifications'
     | '/premium'
+    | '/privacy-policy'
     | '/profile'
     | '/search'
     | '/settings'
@@ -220,6 +231,7 @@ export interface FileRouteTypes {
     | '/create'
     | '/notifications'
     | '/premium'
+    | '/privacy-policy'
     | '/profile'
     | '/search'
     | '/settings'
@@ -240,6 +252,7 @@ export interface RootRouteChildren {
   CreateRoute: typeof CreateRoute
   NotificationsRoute: typeof NotificationsRoute
   PremiumRoute: typeof PremiumRoute
+  PrivacyPolicyRoute: typeof PrivacyPolicyRoute
   ProfileRoute: typeof ProfileRoute
   SearchRoute: typeof SearchRoute
   SettingsRoute: typeof SettingsRoute
@@ -274,6 +287,13 @@ declare module '@tanstack/react-router' {
       path: '/profile'
       fullPath: '/profile'
       preLoaderRoute: typeof ProfileRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/privacy-policy': {
+      id: '/privacy-policy'
+      path: '/privacy-policy'
+      fullPath: '/privacy-policy'
+      preLoaderRoute: typeof PrivacyPolicyRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/premium': {
@@ -384,6 +404,7 @@ const rootRouteChildren: RootRouteChildren = {
   CreateRoute: CreateRoute,
   NotificationsRoute: NotificationsRoute,
   PremiumRoute: PremiumRoute,
+  PrivacyPolicyRoute: PrivacyPolicyRoute,
   ProfileRoute: ProfileRoute,
   SearchRoute: SearchRoute,
   SettingsRoute: SettingsRoute,
