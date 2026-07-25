@@ -31,12 +31,33 @@ function PrivacyPolicyPage() {
       </div>
 
       {/* Content */}
-      <main className="px-5 py-6">
+      <main className="px-5 py-6 pb-28">
         <div
-          className="prose prose-invert max-w-none text-sm text-foreground/90"
+          className="privacy-policy prose prose-invert max-w-none text-sm text-foreground/90"
           dangerouslySetInnerHTML={{ __html: privacyPolicyHtml }}
         />
       </main>
+      <style>{`
+        .privacy-policy h1,
+        .privacy-policy h2,
+        .privacy-policy h3,
+        .privacy-policy strong {
+          color: var(--foreground);
+        }
+        .privacy-policy a {
+          color: var(--primary);
+          text-decoration: underline;
+        }
+        .privacy-policy ul {
+          list-style: disc;
+          padding-left: 1.25rem;
+          margin-bottom: 1rem;
+        }
+        .privacy-policy p,
+        .privacy-policy li {
+          margin-bottom: 0.75rem;
+        }
+      `}</style>
     </div>
   );
 }
