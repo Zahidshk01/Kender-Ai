@@ -133,7 +133,14 @@ function AuthPage() {
           Companion chatbots may not be suitable for some minors.
           <br />
           By continuing, you confirm you are 18 years of age or older and agree to our{" "}
-          <span className="underline">Terms of Service</span> and <span className="underline">Privacy Policy</span>
+          <span className="underline">Terms of Service</span> and{" "}
+          <button
+            type="button"
+            onClick={() => navigate({ to: "/privacy-policy" })}
+            className="inline underline"
+          >
+            Privacy Policy
+          </button>
         </p>
       </div>
     </div>
