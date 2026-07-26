@@ -51,6 +51,8 @@ function ChatsPage() {
   const [selectMode, setSelectMode] = useState(false);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [confirm, setConfirm] = useState<null | "selected" | "all">(null);
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [query, setQuery] = useState("");
   const pressTimer = useRef<number | null>(null);
 
   const load = async () => {
@@ -167,6 +169,12 @@ function ChatsPage() {
     exitSelect();
   };
 
+  const q = query.trim().toLowerCase();
+  const visibleChats = q
+    ? chats.filter(
+        (c) => c.name.toLowerCase().includes(q) || c.last.toLowerCase().includes(q),
+      )
+    : chats;
   const empty = !loading && chats.length === 0;
   const allSelected = selected.size === chats.length && chats.length > 0;
 
@@ -204,8 +212,17 @@ function ChatsPage() {
           <>
             <h1 className="text-2xl font-bold tracking-tight">Chats</h1>
             <div className="flex items-center gap-2">
-              <button aria-label="Search chats" className="flex h-10 w-10 items-center justify-center rounded-full bg-surface">
-                <Search className="h-5 w-5" />
+              <button
+                aria-label="Search chats"
+                onClick={() => {
+                  setSearchOpen((v) => {
+                    if (v) setQuery("");
+                    return !v;
+                  });
+                }}
+                className={`flex h-10 w-10 items-center justify-center rounded-full ${searchOpen ? "bg-primary text-primary-foreground" : "bg-surface"}`}
+              >
+                {searchOpen ? <X className="h-5 w-5" /> : <Search className="h-5 w-5" />}
               </button>
               <button
                 aria-label="Select chats"
@@ -219,6 +236,28 @@ function ChatsPage() {
           </>
         )}
       </header>
+
+      {searchOpen && !selectMode && (
+        <div className="px-4 pb-2">
+          <div className="flex items-center gap-2 rounded-2xl bg-surface px-4 py-3">
+            <Search className="h-4 w-4 shrink-0 text-muted-foreground" />
+            <input
+              autoFocus
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Search chats"
+              className="w-full bg-transparent text-sm outline-none placeholder:text-muted-foreground"
+            />
+            {query && (
+              <button aria-label="Clear search" onClick={() => setQuery("")}>
+                <X className="h-4 w-4 text-muted-foreground" />
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+
+
 
       {loading ? (
         <div className="px-6 pt-16 text-center text-sm text-muted-foreground">Loading…</div>
@@ -235,8 +274,13 @@ function ChatsPage() {
         </div>
       ) : (
         <>
+          {visibleChats.length === 0 ? (
+            <p className="px-6 pt-16 text-center text-sm text-muted-foreground">
+              No chats match "{query}".
+            </p>
+          ) : null}
           <ul className="px-2 pb-4">
-            {chats.map((c) => {
+            {visibleChats.map((c) => {
               const isSel = selected.has(c.characterId);
               return (
                 <li key={c.characterId}>
