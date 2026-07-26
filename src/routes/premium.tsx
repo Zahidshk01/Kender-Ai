@@ -99,9 +99,19 @@ function PremiumPage() {
           {loading ? "Processing…" : "Subscribe for ₹ 1,299/mo"}
         </button>
         <p className="mt-3 text-center text-xs text-muted-foreground">
-          <button className="underline-offset-2 hover:underline">Terms of Use</button>
+          <button
+            onClick={() => navigate({ to: "/terms-of-service" })}
+            className="underline-offset-2 hover:underline"
+          >
+            Terms of Use
+          </button>
           <span className="mx-2">•</span>
-          <button className="underline-offset-2 hover:underline">Privacy Policy</button>
+          <button
+            onClick={() => navigate({ to: "/privacy-policy" })}
+            className="underline-offset-2 hover:underline"
+          >
+            Privacy Policy
+          </button>
         </p>
       </div>
     </div>
