@@ -141,8 +141,6 @@ function AuthPage() {
             Terms of Service
           </button>{" "}
           and{" "}
-
-          <span className="underline">Terms of Service</span> and{" "}
           <button
             type="button"
             onClick={() => navigate({ to: "/privacy-policy" })}
