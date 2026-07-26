@@ -169,6 +169,12 @@ function ChatsPage() {
     exitSelect();
   };
 
+  const q = query.trim().toLowerCase();
+  const visibleChats = q
+    ? chats.filter(
+        (c) => c.name.toLowerCase().includes(q) || c.last.toLowerCase().includes(q),
+      )
+    : chats;
   const empty = !loading && chats.length === 0;
   const allSelected = selected.size === chats.length && chats.length > 0;
 
