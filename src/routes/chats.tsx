@@ -237,6 +237,28 @@ function ChatsPage() {
         )}
       </header>
 
+      {searchOpen && !selectMode && (
+        <div className="px-4 pb-2">
+          <div className="flex items-center gap-2 rounded-2xl bg-surface px-4 py-3">
+            <Search className="h-4 w-4 shrink-0 text-muted-foreground" />
+            <input
+              autoFocus
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Search chats"
+              className="w-full bg-transparent text-sm outline-none placeholder:text-muted-foreground"
+            />
+            {query && (
+              <button aria-label="Clear search" onClick={() => setQuery("")}>
+                <X className="h-4 w-4 text-muted-foreground" />
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+
+
+
       {loading ? (
         <div className="px-6 pt-16 text-center text-sm text-muted-foreground">Loading…</div>
       ) : empty ? (
