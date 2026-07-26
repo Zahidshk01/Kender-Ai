@@ -81,7 +81,7 @@ function SettingsPage() {
         <Row
           icon={<FileText className="h-5 w-5 text-foreground/80" />}
           label="Terms of Service"
-          onClick={() => setInfoDialog("terms")}
+          onClick={() => navigate({ to: "/terms-of-service" })}
         />
         <Row
           icon={<ShieldCheck className="h-5 w-5 text-foreground/80" />}
