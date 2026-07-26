@@ -212,8 +212,17 @@ function ChatsPage() {
           <>
             <h1 className="text-2xl font-bold tracking-tight">Chats</h1>
             <div className="flex items-center gap-2">
-              <button aria-label="Search chats" className="flex h-10 w-10 items-center justify-center rounded-full bg-surface">
-                <Search className="h-5 w-5" />
+              <button
+                aria-label="Search chats"
+                onClick={() => {
+                  setSearchOpen((v) => {
+                    if (v) setQuery("");
+                    return !v;
+                  });
+                }}
+                className={`flex h-10 w-10 items-center justify-center rounded-full ${searchOpen ? "bg-primary text-primary-foreground" : "bg-surface"}`}
+              >
+                {searchOpen ? <X className="h-5 w-5" /> : <Search className="h-5 w-5" />}
               </button>
               <button
                 aria-label="Select chats"
