@@ -274,8 +274,13 @@ function ChatsPage() {
         </div>
       ) : (
         <>
+          {visibleChats.length === 0 ? (
+            <p className="px-6 pt-16 text-center text-sm text-muted-foreground">
+              No chats match "{query}".
+            </p>
+          ) : null}
           <ul className="px-2 pb-4">
-            {chats.map((c) => {
+            {visibleChats.map((c) => {
               const isSel = selected.has(c.characterId);
               return (
                 <li key={c.characterId}>
