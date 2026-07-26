@@ -146,7 +146,7 @@ function AuthGate({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (loading) return;
-    const publicPaths = ["/auth", "/privacy-policy"];
+    const publicPaths = ["/auth", "/privacy-policy", "/terms-of-service"];
     if (!session && !publicPaths.includes(pathname)) {
       router.navigate({ to: "/auth", replace: true });
     }
@@ -166,13 +166,13 @@ function AuthGate({ children }: { children: ReactNode }) {
       </div>
     );
   }
-  const publicPaths = ["/auth", "/privacy-policy"];
+  const publicPaths = ["/auth", "/privacy-policy", "/terms-of-service"];
   if (!session && !publicPaths.includes(pathname)) return null;
   return <>{children}</>;
 }
 
 function BottomNavGate() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
-  if (pathname === "/auth" || pathname === "/privacy-policy") return null;
+  if (pathname === "/auth" || pathname === "/privacy-policy" || pathname === "/terms-of-service") return null;
   return <BottomNav />;
 }
