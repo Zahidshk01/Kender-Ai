@@ -73,6 +73,9 @@
   --gradient-accent: linear-gradient(135deg, var(--accent), oklch(0.55 0.22 350));
   --gradient-overlay: linear-gradient(180deg, transparent 0%, transparent 40%, rgba(0,0,0,0.85) 100%);
   --shadow-accent: 0 8px 30px -8px oklch(0.66 0.22 13 / 0.5);
+
+  --gradient-fab: linear-gradient(135deg, var(--surface-2), var(--surface));
+  --shadow-fab: 0 10px 28px -8px rgba(0,0,0,0.55);
 }
 
 .dark { color-scheme: dark; }
@@ -102,7 +105,9 @@
   .safe-bottom { padding-bottom: env(safe-area-inset-bottom); }
   .gradient-overlay { background-image: var(--gradient-overlay); }
   .gradient-accent { background-image: var(--gradient-accent); }
+  .gradient-fab { background-image: var(--gradient-fab); }
   .shadow-accent { box-shadow: var(--shadow-accent); }
+  .shadow-fab { box-shadow: var(--shadow-fab); }
   .text-balance { text-wrap: balance; }
 }
 

@@ -37,7 +37,7 @@ export function BottomNav() {
                 <Link
                   to={to}
                   aria-label={label}
-                  className="-mt-6 flex h-14 w-14 items-center justify-center rounded-full gradient-accent text-primary-foreground shadow-accent transition-transform active:scale-95"
+                  className="-mt-6 flex h-14 w-14 items-center justify-center rounded-full gradient-fab text-foreground shadow-fab ring-1 ring-border/50 transition-transform active:scale-95"
                 >
                   <Icon className="h-6 w-6" strokeWidth={2.5} />
                 </Link>
