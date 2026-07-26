@@ -51,6 +51,8 @@ function ChatsPage() {
   const [selectMode, setSelectMode] = useState(false);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [confirm, setConfirm] = useState<null | "selected" | "all">(null);
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [query, setQuery] = useState("");
   const pressTimer = useRef<number | null>(null);
 
   const load = async () => {
