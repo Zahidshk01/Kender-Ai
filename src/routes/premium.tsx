@@ -112,14 +112,25 @@ function PremiumPage() {
           <ChevronLeft className="h-5 w-5" />
         </button>
         <button
-          onClick={() => toast("No previous purchases found")}
+          onClick={async () => {
+            const s = await refreshSubscription();
+            toast(s.isPro ? "Pro subscription restored." : "No previous purchases found");
+          }}
           className="rounded-full bg-surface/80 px-4 py-2 text-sm font-medium text-foreground backdrop-blur-sm transition-colors hover:bg-surface-2 active:bg-surface-2"
         >
           Restore
         </button>
       </div>
 
+      {syncing && !isPro && (
+        <div className="relative z-10 mx-4 mt-4 flex items-center justify-center gap-2 rounded-3xl bg-surface px-4 py-3">
+          <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+          <p className="text-sm text-muted-foreground">Confirming your payment…</p>
+        </div>
+      )}
+
       {isPro && (
+
         <div className="relative z-10 mx-4 mt-4 rounded-3xl border border-amber-400/30 bg-amber-400/10 px-4 py-4 text-center">
           <p className="bg-gradient-to-r from-amber-300 via-amber-400 to-amber-600 bg-clip-text text-lg font-extrabold tracking-tight text-transparent">
             Congratulations for KENDER PRO
