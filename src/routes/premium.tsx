@@ -181,9 +181,13 @@ function PremiumPage() {
     if (!STRIPE_LINKS.cancel) {
       setCanceling(true);
       try {
-        await cancelPro({});
+        const res = await cancelPro({});
         await refreshSubscription();
-        toast("Your Pro plan has been canceled.");
+        toast(
+          res?.activeUntil
+            ? `Auto-renewal canceled. Pro stays active until ${new Date(res.activeUntil).toLocaleDateString()}.`
+            : "Your Pro plan has been canceled.",
+        );
       } catch {
         toast.error("Couldn't cancel the plan. Please try again.");
       } finally {
