@@ -362,8 +362,8 @@ function PremiumPage() {
                 Subscribe for {PLANS[plan].price}/{plan === "yearly" ? "yr" : "mo"}
               </span>
             )}
-          </button>
-        )}
+        </button>
+
 
         <p className="mt-3 text-center text-xs text-muted-foreground">
           <button
