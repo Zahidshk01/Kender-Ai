@@ -52,6 +52,8 @@ function PremiumPage() {
   const { isPro, plan: activePlan, currentPeriodEnd, syncing } = useSubscription();
   const [payError, setPayError] = useState<null | "canceled" | "timeout">(null);
   const [restoring, setRestoring] = useState(false);
+  const activatePro = useServerFn(activateProDirect);
+  const cancelPro = useServerFn(cancelProDirect);
 
   // Coming back from Stripe (redirect, tab switch, or back button):
   // re-check entitlement until the webhook lands — no manual reload needed.
