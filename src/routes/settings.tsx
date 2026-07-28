@@ -27,6 +27,7 @@ const APP_VERSION = "v2.4.1";
 function SettingsPage() {
   const navigate = useNavigate();
   const [infoDialog, setInfoDialog] = useState<null | "contact" | "terms" | "version" | "blocked">(null);
+  const { isPro } = useSubscription();
   const [confirm, setConfirm] = useState<null | "signout" | "delete">(null);
 
   async function handleSignOut() {
