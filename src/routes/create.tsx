@@ -41,8 +41,18 @@ function CreatePage() {
   const [firstMessage, setFirstMessage] = useState("");
   const [generatingFirst, setGeneratingFirst] = useState(false);
 
+  const ALLOWED_IMAGE_TYPES = ["image/png", "image/jpeg", "image/webp", "image/gif"];
+  const ALLOWED_IMAGE_EXT = /\.(png|jpe?g|webp|gif)$/i;
+  const MAX_IMAGE_BYTES = 5 * 1024 * 1024; // 5MB
+
   function onUpload(file?: File) {
     if (!file) return;
+    if (!ALLOWED_IMAGE_TYPES.includes(file.type) || !ALLOWED_IMAGE_EXT.test(file.name)) {
+      return toast("Only PNG, JPG, WEBP or GIF images are allowed");
+    }
+    if (file.size > MAX_IMAGE_BYTES) {
+      return toast("Image is too large — max 5MB");
+    }
     const reader = new FileReader();
     reader.onload = () => {
       setImage(reader.result as string);
@@ -50,6 +60,7 @@ function CreatePage() {
     };
     reader.readAsDataURL(file);
   }
+
 
   function openAiPrompt() {
     setShowImageMenu(false);

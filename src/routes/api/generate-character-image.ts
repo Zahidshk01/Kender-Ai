@@ -1,6 +1,15 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { createClient } from "@supabase/supabase-js";
 import { z } from "zod";
+import {
+  aiUserBucket,
+  enforceRateLimits,
+  getClientIp,
+  requireAuth,
+  sanitizeForLlm,
+  uploadIpBucket,
+} from "@/lib/api-security";
+
+const ROUTE = "api/generate-character-image";
 
 const schema = z.object({
   prompt: z.string().trim().min(1).max(1000),
@@ -12,44 +21,6 @@ const schema = z.object({
 // Free plan: 1 image generation / day. Pro: unlimited.
 const FREE_IMAGES_PER_DAY = 1;
 
-type AuthResult = { userId: string } | { errorResponse: Response };
-
-async function requireAuth(request: Request): Promise<AuthResult> {
-  const authHeader = request.headers.get("authorization");
-  if (!authHeader?.startsWith("Bearer ")) {
-    return {
-      errorResponse: new Response(JSON.stringify({ error: "Unauthorized" }), {
-        status: 401,
-        headers: { "Content-Type": "application/json" },
-      }),
-    };
-  }
-  const token = authHeader.slice("Bearer ".length);
-  const url = process.env.SUPABASE_URL;
-  const key = process.env.SUPABASE_PUBLISHABLE_KEY;
-  if (!url || !key) {
-    return {
-      errorResponse: new Response(JSON.stringify({ error: "Server misconfigured" }), {
-        status: 500,
-        headers: { "Content-Type": "application/json" },
-      }),
-    };
-  }
-  const supabase = createClient(url, key, {
-    auth: { persistSession: false, autoRefreshToken: false, storage: undefined },
-  });
-  const { data, error } = await supabase.auth.getClaims(token);
-  const userId = data?.claims?.sub;
-  if (error || !userId) {
-    return {
-      errorResponse: new Response(JSON.stringify({ error: "Unauthorized" }), {
-        status: 401,
-        headers: { "Content-Type": "application/json" },
-      }),
-    };
-  }
-  return { userId };
-}
 
 async function consumeQuota(
   userId: string,
@@ -81,6 +52,14 @@ export const Route = createFileRoute("/api/generate-character-image")({
       POST: async ({ request }) => {
         const auth = await requireAuth(request);
         if ("errorResponse" in auth) return auth.errorResponse;
+
+        const ip = getClientIp(request);
+        const limited = await enforceRateLimits(
+          [uploadIpBucket(ROUTE, ip), aiUserBucket(ROUTE, auth.userId)],
+          60
+        );
+        if (limited) return limited;
+
 
         const quota = await consumeQuota(auth.userId, "images", FREE_IMAGES_PER_DAY);
         if (!quota.allowed) {
@@ -115,7 +94,9 @@ export const Route = createFileRoute("/api/generate-character-image")({
             }
           );
         }
-        const { prompt, category } = parsed.data;
+        const category = parsed.data.category;
+        const prompt = sanitizeForLlm(parsed.data.prompt, 1000);
+
 
         const key = process.env.LOVABLE_API_KEY;
         if (!key) {
