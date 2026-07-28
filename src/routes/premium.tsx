@@ -11,6 +11,8 @@ import {
   withUserRef,
 } from "@/lib/subscription";
 import { supabase } from "@/integrations/supabase/client";
+import { useServerFn } from "@tanstack/react-start";
+import { activateProDirect, cancelProDirect } from "@/lib/subscription.functions";
 
 const CHECKOUT_FLAG = "kender:checkout-pending";
 
@@ -50,6 +52,8 @@ function PremiumPage() {
   const { isPro, plan: activePlan, currentPeriodEnd, syncing } = useSubscription();
   const [payError, setPayError] = useState<null | "canceled" | "timeout">(null);
   const [restoring, setRestoring] = useState(false);
+  const activatePro = useServerFn(activateProDirect);
+  const cancelPro = useServerFn(cancelProDirect);
 
   // Coming back from Stripe (redirect, tab switch, or back button):
   // re-check entitlement until the webhook lands — no manual reload needed.
@@ -112,21 +116,38 @@ function PremiumPage() {
 
   async function handleSubscribe() {
     const link = STRIPE_LINKS[plan];
-    if (!link) {
-      toast("Payment link coming soon — add your Stripe link to enable checkout.");
-      return;
-    }
     setPayError(null);
     setLoading(true);
+
+    // No Stripe link yet → activate Pro directly.
+    if (!link) {
+      try {
+        await activatePro({ data: { plan } });
+        await refreshSubscription();
+        toast.success("Congratulations for KENDER PRO!");
+      } catch {
+        toast.error("Couldn't activate Pro. Please try again.");
+      } finally {
+        setLoading(false);
+      }
+      return;
+    }
+
     sessionStorage.setItem(CHECKOUT_FLAG, "1");
     const { data } = await supabase.auth.getSession();
     window.location.href = withUserRef(link, data.session?.user.id ?? null, plan);
   }
 
 
-  function handleCancel() {
+  async function handleCancel() {
     if (!STRIPE_LINKS.cancel) {
-      toast("Cancellation link coming soon — add your Stripe billing portal link.");
+      try {
+        await cancelPro({});
+        await refreshSubscription();
+        toast("Your Pro plan has been canceled.");
+      } catch {
+        toast.error("Couldn't cancel the plan. Please try again.");
+      }
       return;
     }
     sessionStorage.setItem(CHECKOUT_FLAG, "1");
@@ -134,6 +155,7 @@ function PremiumPage() {
     window.location.href = STRIPE_LINKS.cancel;
 
   }
+
 
   return (
     <div className="safe-top relative flex min-h-screen flex-col overflow-hidden bg-background pb-8">
