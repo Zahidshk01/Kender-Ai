@@ -12,7 +12,7 @@ import {
 } from "@/lib/subscription";
 import { supabase } from "@/integrations/supabase/client";
 import { useServerFn } from "@tanstack/react-start";
-import { activateProDirect, cancelProDirect } from "@/lib/subscription.functions";
+import { activateProDirect, cancelProDirect, restoreProDirect } from "@/lib/subscription.functions";
 
 const CHECKOUT_FLAG = "kender:checkout-pending";
 
@@ -54,6 +54,8 @@ function PremiumPage() {
   const [restoring, setRestoring] = useState(false);
   const activatePro = useServerFn(activateProDirect);
   const cancelPro = useServerFn(cancelProDirect);
+  const restorePro = useServerFn(restoreProDirect);
+  const [canceling, setCanceling] = useState(false);
 
   // Coming back from Stripe (redirect, tab switch, or back button):
   // re-check entitlement until the webhook lands — no manual reload needed.
@@ -101,17 +103,32 @@ function PremiumPage() {
   async function handleRestore() {
     setRestoring(true);
     try {
-      const s = await refreshSubscription();
-      if (s.isPro) {
+      const current = await refreshSubscription();
+      if (current.isPro) {
         setPayError(null);
         toast.success("Pro subscription restored.");
-      } else {
-        toast("No previous purchases found");
+        return;
       }
+      // Direct mode: re-activate a previously purchased plan.
+      if (!STRIPE_LINKS.monthly) {
+        const res = await restorePro({});
+        await refreshSubscription();
+        if (res?.ok) {
+          setPayError(null);
+          toast.success("Pro subscription restored.");
+        } else {
+          toast("No previous purchases found");
+        }
+        return;
+      }
+      toast("No previous purchases found");
+    } catch {
+      toast.error("Couldn't restore your plan. Please try again.");
     } finally {
       setRestoring(false);
     }
   }
+
 
 
   async function handleSubscribe() {
@@ -141,12 +158,15 @@ function PremiumPage() {
 
   async function handleCancel() {
     if (!STRIPE_LINKS.cancel) {
+      setCanceling(true);
       try {
         await cancelPro({});
         await refreshSubscription();
         toast("Your Pro plan has been canceled.");
       } catch {
         toast.error("Couldn't cancel the plan. Please try again.");
+      } finally {
+        setCanceling(false);
       }
       return;
     }
@@ -155,6 +175,7 @@ function PremiumPage() {
     window.location.href = STRIPE_LINKS.cancel;
 
   }
+
 
 
   return (
@@ -309,20 +330,23 @@ function PremiumPage() {
 
       {/* Auto-renew note */}
       <p className="relative z-10 mt-5 text-center text-xs text-muted-foreground">
-        Auto-renews {plan === "yearly" ? "yearly" : "monthly"}. Cancel anytime.
+        Auto-renews {plan === "yearly" ? "yearly" : "monthly"}.{" "}
+        {isPro ? (
+          <button
+            onClick={handleCancel}
+            disabled={canceling}
+            className="underline underline-offset-2 transition-colors hover:text-foreground disabled:opacity-60"
+          >
+            {canceling ? "Canceling…" : "Cancel anytime."}
+          </button>
+        ) : (
+          "Cancel anytime."
+        )}
       </p>
 
       {/* CTA */}
       <div className="mt-auto px-4 pt-4">
-        {isPro ? (
-          <button
-            onClick={handleCancel}
-            className="flex w-full items-center justify-center rounded-full bg-surface px-6 py-4 text-base font-semibold text-foreground transition-transform active:scale-[0.98]"
-          >
-            Cancel plan
-          </button>
-        ) : (
-          <button
+        <button
             onClick={handleSubscribe}
             disabled={loading}
             className="flex w-full items-center justify-center rounded-full bg-white px-6 py-4 text-base font-semibold text-black shadow-lg shadow-white/10 transition-transform active:scale-[0.98] disabled:opacity-60"
@@ -338,8 +362,8 @@ function PremiumPage() {
                 Subscribe for {PLANS[plan].price}/{plan === "yearly" ? "yr" : "mo"}
               </span>
             )}
-          </button>
-        )}
+        </button>
+
 
         <p className="mt-3 text-center text-xs text-muted-foreground">
           <button
