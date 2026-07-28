@@ -62,7 +62,8 @@ export const cancelProDirect = createServerFn({ method: "POST" })
   });
 
 /**
- * Restores a previously purchased (canceled/expired) plan.
+ * Restores a plan: re-enables auto-renewal if the plan is still running,
+ * or re-activates a previously purchased (expired) plan.
  */
 export const restoreProDirect = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -70,7 +71,7 @@ export const restoreProDirect = createServerFn({ method: "POST" })
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: row } = await (supabaseAdmin as any)
       .from("subscriptions")
-      .select("status, plan, current_period_end")
+      .select("status, plan, current_period_end, cancel_at_period_end")
       .eq("user_id", context.userId)
       .maybeSingle();
 
@@ -79,7 +80,18 @@ export const restoreProDirect = createServerFn({ method: "POST" })
     const stillActive =
       (row.status === "active" || row.status === "trialing") &&
       (!row.current_period_end || new Date(row.current_period_end).getTime() > Date.now());
-    if (stillActive) return { ok: true as const, reason: "active" as const };
+
+    if (stillActive) {
+      if (row.cancel_at_period_end) {
+        const { error } = await (supabaseAdmin as any)
+          .from("subscriptions")
+          .update({ cancel_at_period_end: false, updated_at: new Date().toISOString() })
+          .eq("user_id", context.userId);
+        if (error) throw new Error(error.message);
+        return { ok: true as const, reason: "resumed" as const };
+      }
+      return { ok: true as const, reason: "active" as const };
+    }
 
     const plan: "monthly" | "yearly" = row.plan === "yearly" ? "yearly" : "monthly";
     const end = periodEnd(plan);
@@ -88,6 +100,7 @@ export const restoreProDirect = createServerFn({ method: "POST" })
       status: "active",
       plan,
       current_period_end: end.toISOString(),
+      cancel_at_period_end: false,
       updated_at: new Date().toISOString(),
     });
     if (error) throw new Error(error.message);
