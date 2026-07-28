@@ -37,8 +37,12 @@ async function normalizeCatastrophicSsrResponse(response: Response): Promise<Res
   });
 }
 
+// The Lovable editor renders the app inside an iframe, so clickjacking
+// protection is enforced for production builds only.
+const IS_PROD = import.meta.env.PROD;
+
 const SECURITY_HEADERS: Record<string, string> = {
-  "X-Frame-Options": "DENY",
+  ...(IS_PROD ? { "X-Frame-Options": "DENY" } : {}),
   "X-Content-Type-Options": "nosniff",
   "Referrer-Policy": "strict-origin-when-cross-origin",
   "Strict-Transport-Security": "max-age=63072000; includeSubDomains; preload",
@@ -52,12 +56,13 @@ const SECURITY_HEADERS: Record<string, string> = {
     "img-src 'self' data: blob: https:",
     "media-src 'self' data: blob: https:",
     "connect-src 'self' https: wss:",
-    "frame-ancestors 'none'",
+    IS_PROD ? "frame-ancestors 'none'" : "frame-ancestors *",
     "base-uri 'self'",
     "form-action 'self'",
     "object-src 'none'",
   ].join("; "),
 };
+
 
 function withSecurityHeaders(response: Response): Response {
   const headers = new Headers(response.headers);
