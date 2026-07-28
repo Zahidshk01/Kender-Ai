@@ -74,10 +74,25 @@ function SettingsPage() {
       {/* Menu card */}
       <div className="mx-4 mt-4 overflow-hidden rounded-2xl bg-surface">
         <Row
+          icon={<Crown className="h-5 w-5 text-foreground/80" />}
+          label="Plan"
+          right={
+            isPro ? (
+              <span className="bg-gradient-to-r from-amber-300 via-amber-400 to-amber-600 bg-clip-text text-sm font-bold text-transparent">
+                Premium
+              </span>
+            ) : (
+              <span className="text-sm text-muted-foreground">Free</span>
+            )
+          }
+          onClick={() => navigate({ to: "/premium" })}
+        />
+        <Row
           icon={<Mail className="h-5 w-5 text-foreground/80" />}
           label="Contact Us"
           onClick={() => setInfoDialog("contact")}
         />
+
         <Row
           icon={<FileText className="h-5 w-5 text-foreground/80" />}
           label="Terms of Service"
