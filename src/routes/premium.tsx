@@ -330,19 +330,24 @@ function PremiumPage() {
 
       {/* Auto-renew note */}
       <p className="relative z-10 mt-5 text-center text-xs text-muted-foreground">
-        Auto-renews {plan === "yearly" ? "yearly" : "monthly"}. Cancel anytime.
+        Auto-renews {plan === "yearly" ? "yearly" : "monthly"}.{" "}
+        {isPro ? (
+          <button
+            onClick={handleCancel}
+            disabled={canceling}
+            className="underline underline-offset-2 transition-colors hover:text-foreground disabled:opacity-60"
+          >
+            {canceling ? "Canceling…" : "Cancel anytime."}
+          </button>
+        ) : (
+          "Cancel anytime."
+        )}
       </p>
 
       {/* CTA */}
       <div className="mt-auto px-4 pt-4">
-        {isPro ? (
-          <button
-            onClick={handleCancel}
-            className="flex w-full items-center justify-center rounded-full bg-surface px-6 py-4 text-base font-semibold text-foreground transition-transform active:scale-[0.98]"
-          >
-            Cancel plan
-          </button>
-        ) : (
+        {(
+
           <button
             onClick={handleSubscribe}
             disabled={loading}
