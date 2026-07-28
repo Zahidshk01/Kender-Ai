@@ -356,17 +356,32 @@ function PremiumPage() {
 
       {/* Auto-renew note */}
       <p className="relative z-10 mt-5 text-center text-xs text-muted-foreground">
-        Auto-renews {plan === "yearly" ? "yearly" : "monthly"}.{" "}
-        {isPro ? (
-          <button
-            onClick={handleCancel}
-            disabled={canceling}
-            className="underline underline-offset-2 transition-colors hover:text-foreground disabled:opacity-60"
-          >
-            {canceling ? "Canceling…" : "Cancel anytime."}
-          </button>
+        {isPro && cancelAtPeriodEnd ? (
+          <>
+            Auto-renew is off.{" "}
+            <button
+              onClick={handleRestore}
+              disabled={restoring}
+              className="underline underline-offset-2 transition-colors hover:text-foreground disabled:opacity-60"
+            >
+              {restoring ? "Turning on…" : "Turn auto-renew back on."}
+            </button>
+          </>
         ) : (
-          "Cancel anytime."
+          <>
+            Auto-renews {plan === "yearly" ? "yearly" : "monthly"}.{" "}
+            {isPro ? (
+              <button
+                onClick={handleCancel}
+                disabled={canceling}
+                className="underline underline-offset-2 transition-colors hover:text-foreground disabled:opacity-60"
+              >
+                {canceling ? "Canceling…" : "Cancel anytime."}
+              </button>
+            ) : (
+              "Cancel anytime."
+            )}
+          </>
         )}
       </p>
 
