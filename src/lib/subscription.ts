@@ -111,7 +111,7 @@ export async function refreshSubscription(): Promise<SubscriptionState> {
 
     const { data } = await supabase
       .from("subscriptions")
-      .select("status, plan, current_period_end")
+      .select("status, plan, current_period_end, cancel_at_period_end")
       .eq("user_id", uid)
       .maybeSingle();
 
@@ -126,6 +126,7 @@ export async function refreshSubscription(): Promise<SubscriptionState> {
       plan: (data?.plan as "monthly" | "yearly" | null) ?? null,
       status,
       currentPeriodEnd: end,
+      cancelAtPeriodEnd: Boolean((data as any)?.cancel_at_period_end),
       loading: false,
       syncing: snapshot.syncing,
     };
