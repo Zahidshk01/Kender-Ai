@@ -53,6 +53,14 @@ export const Route = createFileRoute("/api/generate-character-image")({
         const auth = await requireAuth(request);
         if ("errorResponse" in auth) return auth.errorResponse;
 
+        const ip = getClientIp(request);
+        const limited = await enforceRateLimits(
+          [uploadIpBucket(ROUTE, ip), aiUserBucket(ROUTE, auth.userId)],
+          60
+        );
+        if (limited) return limited;
+
+
         const quota = await consumeQuota(auth.userId, "images", FREE_IMAGES_PER_DAY);
         if (!quota.allowed) {
           return new Response(
