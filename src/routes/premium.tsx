@@ -13,6 +13,8 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { useServerFn } from "@tanstack/react-start";
 import { activateProDirect, cancelProDirect, restoreProDirect } from "@/lib/subscription.functions";
+import { detectCountry, formatPrice, getPricing, perDay, yearlyDiscount } from "@/lib/pricing";
+
 
 const CHECKOUT_FLAG = "kender:checkout-pending";
 
