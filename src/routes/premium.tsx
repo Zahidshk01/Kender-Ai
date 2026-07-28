@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { ChevronLeft, Check, Minus, Sparkles, Loader2 } from "lucide-react";
+import { ChevronLeft, Check, Minus, Sparkles, Loader2, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
 import ghost from "@/assets/kender-ghost.png";
 import {
