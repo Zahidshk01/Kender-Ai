@@ -147,13 +147,11 @@ function PremiumPage() {
           <ChevronLeft className="h-5 w-5" />
         </button>
         <button
-          onClick={async () => {
-            const s = await refreshSubscription();
-            toast(s.isPro ? "Pro subscription restored." : "No previous purchases found");
-          }}
-          className="rounded-full bg-surface/80 px-4 py-2 text-sm font-medium text-foreground backdrop-blur-sm transition-colors hover:bg-surface-2 active:bg-surface-2"
+          onClick={handleRestore}
+          disabled={restoring}
+          className="rounded-full bg-surface/80 px-4 py-2 text-sm font-medium text-foreground backdrop-blur-sm transition-colors hover:bg-surface-2 active:bg-surface-2 disabled:opacity-60"
         >
-          Restore
+          {restoring ? "Restoring…" : "Restore"}
         </button>
       </div>
 
@@ -163,6 +161,39 @@ function PremiumPage() {
           <p className="text-sm text-muted-foreground">Confirming your payment…</p>
         </div>
       )}
+
+      {payError && !isPro && !syncing && (
+        <div className="relative z-10 mx-4 mt-4 rounded-3xl border border-destructive/40 bg-destructive/10 px-4 py-4">
+          <div className="flex items-start gap-3">
+            <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-destructive" />
+            <div className="flex-1">
+              <p className="text-sm font-semibold text-foreground">Payment not confirmed</p>
+              <p className="mt-1 text-xs text-muted-foreground">
+                {payError === "canceled"
+                  ? "Your Stripe checkout was canceled, so you're still on the Free plan."
+                  : "We couldn't confirm your payment in time. If you were charged, tap Restore."}
+              </p>
+              <div className="mt-3 flex gap-2">
+                <button
+                  onClick={handleSubscribe}
+                  disabled={loading}
+                  className="rounded-full bg-white px-4 py-2 text-xs font-semibold text-black disabled:opacity-60"
+                >
+                  Retry payment
+                </button>
+                <button
+                  onClick={handleRestore}
+                  disabled={restoring}
+                  className="rounded-full bg-surface px-4 py-2 text-xs font-semibold text-foreground disabled:opacity-60"
+                >
+                  {restoring ? "Restoring…" : "Restore"}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
 
       {isPro && (
 
