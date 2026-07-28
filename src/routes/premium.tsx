@@ -31,11 +31,6 @@ export const Route = createFileRoute("/premium")({
 
 type PlanId = "monthly" | "yearly";
 
-const PLANS: Record<PlanId, { label: string; price: string; per: string; badge?: string }> = {
-  monthly: { label: "Per Month", price: "₹ 999", per: "₹32.85 / day" },
-  yearly: { label: "Per Year", price: "₹ 8,999", per: "₹24.65 / day", badge: "25% OFF" },
-};
-
 const FEATURES: { name: string; free: string | null }[] = [
   { name: "Better memory", free: null },
   { name: "More intelligent", free: null },
@@ -44,6 +39,7 @@ const FEATURES: { name: string; free: string | null }[] = [
   { name: "No ads", free: null },
   { name: "Unlimited messages", free: "25/daily" },
 ];
+
 
 function PremiumPage() {
   const navigate = useNavigate();
