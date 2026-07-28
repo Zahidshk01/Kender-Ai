@@ -94,7 +94,9 @@ export const Route = createFileRoute("/api/generate-character-image")({
             }
           );
         }
-        const { prompt, category } = parsed.data;
+        const category = parsed.data.category;
+        const prompt = sanitizeForLlm(parsed.data.prompt, 1000);
+
 
         const key = process.env.LOVABLE_API_KEY;
         if (!key) {
