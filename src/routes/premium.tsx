@@ -40,15 +40,17 @@ function PremiumPage() {
   const [plan, setPlan] = useState<PlanId>("yearly");
   const { isPro, plan: activePlan, currentPeriodEnd } = useSubscription();
 
-  function handleSubscribe() {
+  async function handleSubscribe() {
     const link = STRIPE_LINKS[plan];
     if (!link) {
       toast("Payment link coming soon — add your Stripe link to enable checkout.");
       return;
     }
     setLoading(true);
-    window.location.href = link;
+    const { data } = await supabase.auth.getSession();
+    window.location.href = withUserRef(link, data.session?.user.id ?? null, plan);
   }
+
 
   function handleCancel() {
     if (!STRIPE_LINKS.cancel) {
