@@ -48,11 +48,11 @@ function PremiumPage() {
       {/* Top bar */}
       <div className="relative z-10 flex items-center justify-between px-4 pt-4">
         <button
-          onClick={() => navigate({ to: "/settings" })}
-          aria-label="Close"
+          onClick={() => navigate({ to: "/" })}
+          aria-label="Back"
           className="flex h-10 w-10 items-center justify-center rounded-full bg-surface/80 text-foreground backdrop-blur-sm transition-colors hover:bg-surface-2 active:bg-surface-2"
         >
-          <X className="h-5 w-5" />
+          <ChevronLeft className="h-5 w-5" />
         </button>
         <button
           onClick={() => toast("No previous purchases found")}
