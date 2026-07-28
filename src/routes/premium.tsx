@@ -346,9 +346,7 @@ function PremiumPage() {
 
       {/* CTA */}
       <div className="mt-auto px-4 pt-4">
-        {(
-
-          <button
+        <button
             onClick={handleSubscribe}
             disabled={loading}
             className="flex w-full items-center justify-center rounded-full bg-white px-6 py-4 text-base font-semibold text-black shadow-lg shadow-white/10 transition-transform active:scale-[0.98] disabled:opacity-60"
