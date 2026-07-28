@@ -82,11 +82,10 @@ function HomePage() {
         <h1 className="text-lg font-bold tracking-[0.2em] text-white">KENDER</h1>
         <div className="absolute right-4 top-1/2 flex -translate-y-1/2 items-center gap-2">
           <Link
-            to="/create"
-            aria-label="Create"
-            className="flex h-9 w-9 items-center justify-center rounded-full bg-surface active:scale-95"
+            to="/premium"
+            className="rounded-full bg-gradient-to-r from-amber-400 to-amber-600 px-3 py-1 text-xs font-bold text-black active:scale-95"
           >
-            <Plus className="h-5 w-5" />
+            Get Pro
           </Link>
           <Link
             to="/notifications"
