@@ -116,6 +116,7 @@ function PremiumPage() {
       toast("Payment link coming soon — add your Stripe link to enable checkout.");
       return;
     }
+    setPayError(null);
     setLoading(true);
     sessionStorage.setItem(CHECKOUT_FLAG, "1");
     const { data } = await supabase.auth.getSession();
