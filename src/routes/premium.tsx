@@ -54,6 +54,8 @@ function PremiumPage() {
   const [restoring, setRestoring] = useState(false);
   const activatePro = useServerFn(activateProDirect);
   const cancelPro = useServerFn(cancelProDirect);
+  const restorePro = useServerFn(restoreProDirect);
+  const [canceling, setCanceling] = useState(false);
 
   // Coming back from Stripe (redirect, tab switch, or back button):
   // re-check entitlement until the webhook lands — no manual reload needed.
