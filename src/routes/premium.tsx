@@ -13,6 +13,8 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { useServerFn } from "@tanstack/react-start";
 import { activateProDirect, cancelProDirect, restoreProDirect } from "@/lib/subscription.functions";
+import { detectCountry, formatPrice, getPricing, perDay, yearlyDiscount } from "@/lib/pricing";
+
 
 const CHECKOUT_FLAG = "kender:checkout-pending";
 
@@ -31,11 +33,6 @@ export const Route = createFileRoute("/premium")({
 
 type PlanId = "monthly" | "yearly";
 
-const PLANS: Record<PlanId, { label: string; price: string; per: string; badge?: string }> = {
-  monthly: { label: "Per Month", price: "₹ 999", per: "₹32.85 / day" },
-  yearly: { label: "Per Year", price: "₹ 8,999", per: "₹24.65 / day", badge: "25% OFF" },
-};
-
 const FEATURES: { name: string; free: string | null }[] = [
   { name: "Better memory", free: null },
   { name: "More intelligent", free: null },
@@ -44,6 +41,7 @@ const FEATURES: { name: string; free: string | null }[] = [
   { name: "No ads", free: null },
   { name: "Unlimited messages", free: "25/daily" },
 ];
+
 
 function PremiumPage() {
   const navigate = useNavigate();
@@ -56,6 +54,27 @@ function PremiumPage() {
   const cancelPro = useServerFn(cancelProDirect);
   const restorePro = useServerFn(restoreProDirect);
   const [canceling, setCanceling] = useState(false);
+
+  // Localised pricing — resolved after mount so SSR markup stays stable.
+  const [country, setCountry] = useState<string>("US");
+  useEffect(() => {
+    setCountry(detectCountry());
+  }, []);
+  const pricing = getPricing(country);
+  const PLANS: Record<PlanId, { label: string; price: string; per: string; badge?: string }> = {
+    monthly: {
+      label: "Per Month",
+      price: formatPrice(pricing, pricing.monthly),
+      per: perDay(pricing, "monthly"),
+    },
+    yearly: {
+      label: "Per Year",
+      price: formatPrice(pricing, pricing.yearly),
+      per: perDay(pricing, "yearly"),
+      badge: `${yearlyDiscount(pricing)}% OFF`,
+    },
+  };
+
 
   // Coming back from Stripe (redirect, tab switch, or back button):
   // re-check entitlement until the webhook lands — no manual reload needed.
