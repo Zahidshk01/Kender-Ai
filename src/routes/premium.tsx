@@ -48,13 +48,18 @@ function PremiumPage() {
   const [loading, setLoading] = useState(false);
   const [plan, setPlan] = useState<PlanId>("yearly");
   const { isPro, plan: activePlan, currentPeriodEnd, syncing } = useSubscription();
+  const [payError, setPayError] = useState<null | "canceled" | "timeout">(null);
+  const [restoring, setRestoring] = useState(false);
 
   // Coming back from Stripe (redirect, tab switch, or back button):
   // re-check entitlement until the webhook lands — no manual reload needed.
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
+    const checkout = params.get("checkout");
     const fromStripe =
-      params.get("checkout") === "success" ||
+      checkout === "success" ||
+      checkout === "cancel" ||
+      checkout === "canceled" ||
       sessionStorage.getItem(CHECKOUT_FLAG) === "1";
     if (!fromStripe) return;
 
@@ -65,16 +70,45 @@ function PremiumPage() {
       window.history.replaceState({}, "", window.location.pathname + (qs ? `?${qs}` : ""));
     }
 
+    if (checkout === "cancel" || checkout === "canceled") {
+      setPayError("canceled");
+      return;
+    }
+
     let cancelled = false;
     void pollForProAfterCheckout().then((pro) => {
       if (cancelled) return;
-      if (pro) toast.success("Congratulations for KENDER PRO!");
-      else toast("No active subscription found yet. You're still on the Free plan.");
+      if (pro) {
+        setPayError(null);
+        toast.success("Congratulations for KENDER PRO!");
+      } else {
+        setPayError("timeout");
+      }
     });
     return () => {
       cancelled = true;
     };
   }, []);
+
+  useEffect(() => {
+    if (isPro) setPayError(null);
+  }, [isPro]);
+
+  async function handleRestore() {
+    setRestoring(true);
+    try {
+      const s = await refreshSubscription();
+      if (s.isPro) {
+        setPayError(null);
+        toast.success("Pro subscription restored.");
+      } else {
+        toast("No previous purchases found");
+      }
+    } finally {
+      setRestoring(false);
+    }
+  }
+
 
   async function handleSubscribe() {
     const link = STRIPE_LINKS[plan];
