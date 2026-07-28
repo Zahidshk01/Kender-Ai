@@ -47,7 +47,34 @@ function PremiumPage() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [plan, setPlan] = useState<PlanId>("yearly");
-  const { isPro, plan: activePlan, currentPeriodEnd } = useSubscription();
+  const { isPro, plan: activePlan, currentPeriodEnd, syncing } = useSubscription();
+
+  // Coming back from Stripe (redirect, tab switch, or back button):
+  // re-check entitlement until the webhook lands — no manual reload needed.
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const fromStripe =
+      params.get("checkout") === "success" ||
+      sessionStorage.getItem(CHECKOUT_FLAG) === "1";
+    if (!fromStripe) return;
+
+    sessionStorage.removeItem(CHECKOUT_FLAG);
+    if (params.has("checkout")) {
+      params.delete("checkout");
+      const qs = params.toString();
+      window.history.replaceState({}, "", window.location.pathname + (qs ? `?${qs}` : ""));
+    }
+
+    let cancelled = false;
+    void pollForProAfterCheckout().then((pro) => {
+      if (cancelled) return;
+      if (pro) toast.success("Congratulations for KENDER PRO!");
+      else toast("No active subscription found yet. You're still on the Free plan.");
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   async function handleSubscribe() {
     const link = STRIPE_LINKS[plan];
@@ -56,6 +83,7 @@ function PremiumPage() {
       return;
     }
     setLoading(true);
+    sessionStorage.setItem(CHECKOUT_FLAG, "1");
     const { data } = await supabase.auth.getSession();
     window.location.href = withUserRef(link, data.session?.user.id ?? null, plan);
   }
@@ -66,7 +94,10 @@ function PremiumPage() {
       toast("Cancellation link coming soon — add your Stripe billing portal link.");
       return;
     }
+    sessionStorage.setItem(CHECKOUT_FLAG, "1");
+    void refreshSubscription();
     window.location.href = STRIPE_LINKS.cancel;
+
   }
 
   return (
