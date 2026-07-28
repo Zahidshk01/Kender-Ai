@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useSyncExternalStore } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
 /**
@@ -29,13 +29,14 @@ export function withUserRef(link: string, userId: string | null, plan?: string) 
   return `${link}${sep}client_reference_id=${encodeURIComponent(userId)}${planParam}`;
 }
 
-
 export type SubscriptionState = {
   isPro: boolean;
   plan: "monthly" | "yearly" | null;
   status: string;
   currentPeriodEnd: string | null;
   loading: boolean;
+  /** True while we're polling for a just-completed Stripe checkout. */
+  syncing: boolean;
 };
 
 const EMPTY: SubscriptionState = {
@@ -44,72 +45,154 @@ const EMPTY: SubscriptionState = {
   status: "free",
   currentPeriodEnd: null,
   loading: true,
+  syncing: false,
 };
 
-export function useSubscription(): SubscriptionState {
-  const [state, setState] = useState<SubscriptionState>(EMPTY);
+/* ------------------------------------------------------------------ *
+ * Shared store — one fetch + one realtime channel for the whole app.  *
+ * ------------------------------------------------------------------ */
 
-  useEffect(() => {
-    let active = true;
-    let channel: ReturnType<typeof supabase.channel> | null = null;
+let snapshot: SubscriptionState = EMPTY;
+const listeners = new Set<() => void>();
+let channel: ReturnType<typeof supabase.channel> | null = null;
+let currentUid: string | null = null;
+let started = false;
+let inFlight: Promise<SubscriptionState> | null = null;
 
-    async function load() {
-      const { data: sess } = await supabase.auth.getSession();
-      const uid = sess.session?.user.id;
-      if (!uid) {
-        if (active) setState({ ...EMPTY, loading: false });
-        return;
+function setSnapshot(next: SubscriptionState) {
+  snapshot = next;
+  listeners.forEach((l) => l());
+}
+
+function subscribeRealtime(uid: string) {
+  if (channel && currentUid === uid) return;
+  if (channel) supabase.removeChannel(channel);
+  currentUid = uid;
+  channel = supabase
+    .channel(`sub-${uid}`)
+    .on(
+      "postgres_changes",
+      {
+        event: "*",
+        schema: "public",
+        table: "subscriptions",
+        filter: `user_id=eq.${uid}`,
+      },
+      () => {
+        void refreshSubscription();
+      },
+    )
+    .subscribe();
+}
+
+/** Re-reads the subscription row and pushes it to every subscribed component. */
+export async function refreshSubscription(): Promise<SubscriptionState> {
+  if (inFlight) return inFlight;
+
+  inFlight = (async () => {
+    const { data: sess } = await supabase.auth.getSession();
+    const uid = sess.session?.user.id ?? null;
+
+    if (!uid) {
+      if (channel) {
+        supabase.removeChannel(channel);
+        channel = null;
+        currentUid = null;
       }
-
-      const { data } = await supabase
-        .from("subscriptions")
-        .select("status, plan, current_period_end")
-        .eq("user_id", uid)
-        .maybeSingle();
-
-      if (!active) return;
-      const status = data?.status ?? "free";
-      const end = data?.current_period_end ?? null;
-      const active_ =
-        (status === "active" || status === "trialing") &&
-        (!end || new Date(end).getTime() > Date.now());
-
-      setState({
-        isPro: active_,
-        plan: (data?.plan as "monthly" | "yearly" | null) ?? null,
-        status,
-        currentPeriodEnd: end,
-        loading: false,
-      });
-
-      channel = supabase
-        .channel(`sub-${uid}`)
-        .on(
-          "postgres_changes",
-          {
-            event: "*",
-            schema: "public",
-            table: "subscriptions",
-            filter: `user_id=eq.${uid}`,
-          },
-          () => load(),
-        )
-        .subscribe();
+      const next = { ...EMPTY, loading: false, syncing: snapshot.syncing };
+      setSnapshot(next);
+      return next;
     }
 
-    load();
-    const { data: sub } = supabase.auth.onAuthStateChange(() => load());
+    subscribeRealtime(uid);
 
-    return () => {
-      active = false;
-      sub.subscription.unsubscribe();
-      if (channel) supabase.removeChannel(channel);
+    const { data } = await supabase
+      .from("subscriptions")
+      .select("status, plan, current_period_end")
+      .eq("user_id", uid)
+      .maybeSingle();
+
+    const status = data?.status ?? "free";
+    const end = data?.current_period_end ?? null;
+    const isPro =
+      (status === "active" || status === "trialing") &&
+      (!end || new Date(end).getTime() > Date.now());
+
+    const next: SubscriptionState = {
+      isPro,
+      plan: (data?.plan as "monthly" | "yearly" | null) ?? null,
+      status,
+      currentPeriodEnd: end,
+      loading: false,
+      syncing: snapshot.syncing,
     };
+    setSnapshot(next);
+    return next;
+  })();
+
+  try {
+    return await inFlight;
+  } finally {
+    inFlight = null;
+  }
+}
+
+/**
+ * Poll after returning from Stripe until the webhook flips the plan to Pro.
+ * Resolves as soon as Pro is detected, or when the attempts run out (the user
+ * simply stays on Free — no manual reload is ever required either way).
+ */
+export async function pollForProAfterCheckout(
+  attempts = 12,
+  intervalMs = 2000,
+): Promise<boolean> {
+  setSnapshot({ ...snapshot, syncing: true });
+  try {
+    for (let i = 0; i < attempts; i++) {
+      const state = await refreshSubscription();
+      if (state.isPro) return true;
+      await new Promise((r) => setTimeout(r, intervalMs));
+    }
+    const final = await refreshSubscription();
+    return final.isPro;
+  } finally {
+    setSnapshot({ ...snapshot, syncing: false });
+  }
+}
+
+function start() {
+  if (started || typeof window === "undefined") return;
+  started = true;
+
+  void refreshSubscription();
+  supabase.auth.onAuthStateChange(() => {
+    void refreshSubscription();
+  });
+
+  // Returning from the Stripe tab/redirect: re-check immediately.
+  window.addEventListener("focus", () => void refreshSubscription());
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "visible") void refreshSubscription();
+  });
+  window.addEventListener("pageshow", () => void refreshSubscription());
+}
+
+export function useSubscription(): SubscriptionState {
+  useEffect(() => {
+    start();
   }, []);
 
-  return state;
+  return useSyncExternalStore(
+    (l) => {
+      listeners.add(l);
+      return () => listeners.delete(l);
+    },
+    () => snapshot,
+    () => EMPTY,
+  );
 }
 
 export function useIsPro(): boolean {
   return useSubscription().isPro;
 }
+
