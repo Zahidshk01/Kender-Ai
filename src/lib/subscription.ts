@@ -21,6 +21,15 @@ export const STRIPE_LINKS = {
   cancel: "",
 };
 
+/** Appends the signed-in user id so the Stripe webhook can match the payment. */
+export function withUserRef(link: string, userId: string | null, plan?: string) {
+  if (!link || !userId) return link;
+  const sep = link.includes("?") ? "&" : "?";
+  const planParam = plan ? `&prefilled_promo_code=&plan=${plan}` : "";
+  return `${link}${sep}client_reference_id=${encodeURIComponent(userId)}${planParam}`;
+}
+
+
 export type SubscriptionState = {
   isPro: boolean;
   plan: "monthly" | "yearly" | null;
