@@ -3,6 +3,8 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { ChevronLeft, Check, Minus, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import ghost from "@/assets/kender-ghost.png";
+import { STRIPE_LINKS, useSubscription } from "@/lib/subscription";
+
 
 export const Route = createFileRoute("/premium")({
   head: () => ({
@@ -34,13 +36,24 @@ function PremiumPage() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [plan, setPlan] = useState<PlanId>("yearly");
+  const { isPro, plan: activePlan, currentPeriodEnd } = useSubscription();
 
   function handleSubscribe() {
+    const link = STRIPE_LINKS[plan];
+    if (!link) {
+      toast("Payment link coming soon — add your Stripe link to enable checkout.");
+      return;
+    }
     setLoading(true);
-    setTimeout(() => {
-      setLoading(false);
-      toast.success("Welcome to Kender Pro!");
-    }, 900);
+    window.location.href = link;
+  }
+
+  function handleCancel() {
+    if (!STRIPE_LINKS.cancel) {
+      toast("Cancellation link coming soon — add your Stripe billing portal link.");
+      return;
+    }
+    window.location.href = STRIPE_LINKS.cancel;
   }
 
   return (
@@ -62,12 +75,31 @@ function PremiumPage() {
         </button>
       </div>
 
+      {isPro && (
+        <div className="relative z-10 mx-4 mt-4 rounded-3xl border border-amber-400/30 bg-amber-400/10 px-4 py-4 text-center">
+          <p className="bg-gradient-to-r from-amber-300 via-amber-400 to-amber-600 bg-clip-text text-lg font-extrabold tracking-tight text-transparent">
+            Congratulations for KENDER PRO
+          </p>
+          <p className="mt-1 text-xs text-muted-foreground">
+            {activePlan === "yearly" ? "Yearly plan" : "Monthly plan"} active
+            {currentPeriodEnd
+              ? ` · renews ${new Date(currentPeriodEnd).toLocaleDateString()}`
+              : ""}
+          </p>
+        </div>
+      )}
+
       {/* Logo + title */}
       <div className="relative z-10 mt-4 flex flex-col items-center px-6 text-center">
         <img src={ghost} alt="Kender" className="h-14 w-14" />
-        <h1 className="mt-4 text-2xl font-bold tracking-tight text-foreground">Upgrade to Pro</h1>
-        <p className="mt-1 text-sm text-muted-foreground">Unlock every premium feature.</p>
+        <h1 className="mt-4 text-2xl font-bold tracking-tight text-foreground">
+          {isPro ? "Your Pro plan" : "Upgrade to Pro"}
+        </h1>
+        <p className="mt-1 text-sm text-muted-foreground">
+          {isPro ? "You have every premium feature unlocked." : "Unlock every premium feature."}
+        </p>
       </div>
+
 
       {/* Plan cards */}
       <div className="relative z-10 mt-8 grid grid-cols-2 gap-3 px-4">
@@ -139,23 +171,33 @@ function PremiumPage() {
 
       {/* CTA */}
       <div className="mt-auto px-4 pt-4">
-        <button
-          onClick={handleSubscribe}
-          disabled={loading}
-          className="flex w-full items-center justify-center rounded-full bg-white px-6 py-4 text-base font-semibold text-black shadow-lg shadow-white/10 transition-transform active:scale-[0.98] disabled:opacity-60"
-        >
-          {loading ? (
-            <span className="flex items-center gap-2">
-              <span className="h-4 w-4 animate-spin rounded-full border-2 border-black/30 border-t-black" />
-              Processing…
-            </span>
-          ) : (
-            <span className="flex items-center gap-2">
-              <Sparkles className="h-4 w-4" />
-              Subscribe for {PLANS[plan].price}/{plan === "yearly" ? "yr" : "mo"}
-            </span>
-          )}
-        </button>
+        {isPro ? (
+          <button
+            onClick={handleCancel}
+            className="flex w-full items-center justify-center rounded-full bg-surface px-6 py-4 text-base font-semibold text-foreground transition-transform active:scale-[0.98]"
+          >
+            Cancel plan
+          </button>
+        ) : (
+          <button
+            onClick={handleSubscribe}
+            disabled={loading}
+            className="flex w-full items-center justify-center rounded-full bg-white px-6 py-4 text-base font-semibold text-black shadow-lg shadow-white/10 transition-transform active:scale-[0.98] disabled:opacity-60"
+          >
+            {loading ? (
+              <span className="flex items-center gap-2">
+                <span className="h-4 w-4 animate-spin rounded-full border-2 border-black/30 border-t-black" />
+                Processing…
+              </span>
+            ) : (
+              <span className="flex items-center gap-2">
+                <Sparkles className="h-4 w-4" />
+                Subscribe for {PLANS[plan].price}/{plan === "yearly" ? "yr" : "mo"}
+              </span>
+            )}
+          </button>
+        )}
+
         <p className="mt-3 text-center text-xs text-muted-foreground">
           <button
             onClick={() => navigate({ to: "/terms-of-service" })}

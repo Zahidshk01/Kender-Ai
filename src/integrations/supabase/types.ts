@@ -215,6 +215,60 @@ export type Database = {
         }
         Relationships: []
       }
+      subscriptions: {
+        Row: {
+          created_at: string
+          current_period_end: string | null
+          plan: string | null
+          status: string
+          stripe_customer_id: string | null
+          stripe_subscription_id: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          current_period_end?: string | null
+          plan?: string | null
+          status?: string
+          stripe_customer_id?: string | null
+          stripe_subscription_id?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          current_period_end?: string | null
+          plan?: string | null
+          status?: string
+          stripe_customer_id?: string | null
+          stripe_subscription_id?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      usage_daily: {
+        Row: {
+          day: string
+          images: number
+          messages: number
+          user_id: string
+        }
+        Insert: {
+          day?: string
+          images?: number
+          messages?: number
+          user_id: string
+        }
+        Update: {
+          day?: string
+          images?: number
+          messages?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_blocks: {
         Row: {
           blocked_target: string
@@ -341,6 +395,11 @@ export type Database = {
         Args: { _key: string; _limit: number; _window_seconds: number }
         Returns: boolean
       }
+      consume_quota: {
+        Args: { _free_limit: number; _kind: string; _user_id: string }
+        Returns: Json
+      }
+      is_pro: { Args: { _user_id: string }; Returns: boolean }
       is_username_available: {
         Args: { _user_id: string; _username: string }
         Returns: boolean

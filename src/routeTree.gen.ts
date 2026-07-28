@@ -27,6 +27,7 @@ import { Route as ApiGenerateNameRouteImport } from './routes/api/generate-name'
 import { Route as ApiGenerateFirstMessageRouteImport } from './routes/api/generate-first-message'
 import { Route as ApiGenerateCharacterImageRouteImport } from './routes/api/generate-character-image'
 import { Route as ApiChatRouteImport } from './routes/api/chat'
+import { Route as ApiPublicHooksStripeRouteImport } from './routes/api/public/hooks/stripe'
 import { Route as ApiPublicHooksSendRemindersRouteImport } from './routes/api/public/hooks/send-reminders'
 
 const TermsOfServiceRoute = TermsOfServiceRouteImport.update({
@@ -120,6 +121,11 @@ const ApiChatRoute = ApiChatRouteImport.update({
   path: '/api/chat',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicHooksStripeRoute = ApiPublicHooksStripeRouteImport.update({
+  id: '/api/public/hooks/stripe',
+  path: '/api/public/hooks/stripe',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPublicHooksSendRemindersRoute =
   ApiPublicHooksSendRemindersRouteImport.update({
     id: '/api/public/hooks/send-reminders',
@@ -147,6 +153,7 @@ export interface FileRoutesByFullPath {
   '/dm/$userId': typeof DmUserIdRoute
   '/u/$userId': typeof UUserIdRoute
   '/api/public/hooks/send-reminders': typeof ApiPublicHooksSendRemindersRoute
+  '/api/public/hooks/stripe': typeof ApiPublicHooksStripeRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -168,6 +175,7 @@ export interface FileRoutesByTo {
   '/dm/$userId': typeof DmUserIdRoute
   '/u/$userId': typeof UUserIdRoute
   '/api/public/hooks/send-reminders': typeof ApiPublicHooksSendRemindersRoute
+  '/api/public/hooks/stripe': typeof ApiPublicHooksStripeRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -190,6 +198,7 @@ export interface FileRoutesById {
   '/dm/$userId': typeof DmUserIdRoute
   '/u/$userId': typeof UUserIdRoute
   '/api/public/hooks/send-reminders': typeof ApiPublicHooksSendRemindersRoute
+  '/api/public/hooks/stripe': typeof ApiPublicHooksStripeRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -213,6 +222,7 @@ export interface FileRouteTypes {
     | '/dm/$userId'
     | '/u/$userId'
     | '/api/public/hooks/send-reminders'
+    | '/api/public/hooks/stripe'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -234,6 +244,7 @@ export interface FileRouteTypes {
     | '/dm/$userId'
     | '/u/$userId'
     | '/api/public/hooks/send-reminders'
+    | '/api/public/hooks/stripe'
   id:
     | '__root__'
     | '/'
@@ -255,6 +266,7 @@ export interface FileRouteTypes {
     | '/dm/$userId'
     | '/u/$userId'
     | '/api/public/hooks/send-reminders'
+    | '/api/public/hooks/stripe'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -277,6 +289,7 @@ export interface RootRouteChildren {
   DmUserIdRoute: typeof DmUserIdRoute
   UUserIdRoute: typeof UUserIdRoute
   ApiPublicHooksSendRemindersRoute: typeof ApiPublicHooksSendRemindersRoute
+  ApiPublicHooksStripeRoute: typeof ApiPublicHooksStripeRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -407,6 +420,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiChatRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/hooks/stripe': {
+      id: '/api/public/hooks/stripe'
+      path: '/api/public/hooks/stripe'
+      fullPath: '/api/public/hooks/stripe'
+      preLoaderRoute: typeof ApiPublicHooksStripeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/hooks/send-reminders': {
       id: '/api/public/hooks/send-reminders'
       path: '/api/public/hooks/send-reminders'
@@ -437,6 +457,7 @@ const rootRouteChildren: RootRouteChildren = {
   DmUserIdRoute: DmUserIdRoute,
   UUserIdRoute: UUserIdRoute,
   ApiPublicHooksSendRemindersRoute: ApiPublicHooksSendRemindersRoute,
+  ApiPublicHooksStripeRoute: ApiPublicHooksStripeRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

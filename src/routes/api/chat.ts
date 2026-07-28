@@ -73,6 +73,35 @@ async function checkRateLimit(
   }
 }
 
+// Free plan: 25 messages / day. Pro: unlimited.
+const FREE_MESSAGES_PER_DAY = 25;
+
+type Quota = { allowed: boolean; is_pro: boolean; used: number; limit: number };
+
+async function consumeQuota(
+  userId: string,
+  kind: "messages" | "images",
+  freeLimit: number
+): Promise<Quota> {
+  try {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data, error } = await (supabaseAdmin as any).rpc("consume_quota", {
+      _user_id: userId,
+      _kind: kind,
+      _free_limit: freeLimit,
+    });
+    if (error) {
+      console.error("[chat] quota RPC error", error);
+      return { allowed: true, is_pro: false, used: 0, limit: freeLimit };
+    }
+    return data as Quota;
+  } catch (e) {
+    console.error("[chat] quota exception", e);
+    return { allowed: true, is_pro: false, used: 0, limit: freeLimit };
+  }
+}
+
+
 export const Route = createFileRoute("/api/chat")({
   server: {
     handlers: {
@@ -99,6 +128,21 @@ export const Route = createFileRoute("/api/chat")({
             }
           );
         }
+
+        // Free-plan daily message limit (Pro is unlimited)
+        const quota = await consumeQuota(auth.userId, "messages", FREE_MESSAGES_PER_DAY);
+        if (!quota.allowed) {
+          return new Response(
+            JSON.stringify({
+              error: `Limit reached — you've used all ${quota.limit} free messages today. Get Pro for unlimited messages.`,
+              code: "limit_reached",
+              kind: "messages",
+              limit: quota.limit,
+            }),
+            { status: 402, headers: { "Content-Type": "application/json" } }
+          );
+        }
+        const isPro = quota.is_pro;
 
 
         try {
@@ -168,14 +212,18 @@ export const Route = createFileRoute("/api/chat")({
                 "Content-Type": "application/json",
               },
               body: JSON.stringify({
-                model: "google/gemini-2.5-flash-lite",
+                // Pro: smarter model, longer memory and replies. Free: fast lite model.
+                model: isPro
+                  ? "google/gemini-2.5-flash"
+                  : "google/gemini-2.5-flash-lite",
                 temperature: 0.95,
-                max_tokens: 200,
+                max_tokens: isPro ? 400 : 200,
                 messages: [
                   { role: "system", content: systemPrompt },
-                  ...(messages || []),
+                  ...(messages || []).slice(isPro ? -60 : -12),
                 ],
               }),
+
             }
           );
 
