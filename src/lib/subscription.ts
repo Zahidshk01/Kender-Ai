@@ -34,6 +34,8 @@ export type SubscriptionState = {
   plan: "monthly" | "yearly" | null;
   status: string;
   currentPeriodEnd: string | null;
+  /** Auto-renewal turned off — plan keeps working until currentPeriodEnd. */
+  cancelAtPeriodEnd: boolean;
   loading: boolean;
   /** True while we're polling for a just-completed Stripe checkout. */
   syncing: boolean;
@@ -44,6 +46,7 @@ const EMPTY: SubscriptionState = {
   plan: null,
   status: "free",
   currentPeriodEnd: null,
+  cancelAtPeriodEnd: false,
   loading: true,
   syncing: false,
 };
