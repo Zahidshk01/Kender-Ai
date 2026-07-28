@@ -123,18 +123,20 @@ function PremiumPage() {
     setRestoring(true);
     try {
       const current = await refreshSubscription();
-      if (current.isPro) {
+      if (current.isPro && !current.cancelAtPeriodEnd) {
         setPayError(null);
         toast.success("Pro subscription restored.");
         return;
       }
-      // Direct mode: re-activate a previously purchased plan.
+      // Direct mode: resume auto-renewal or re-activate a purchased plan.
       if (!STRIPE_LINKS.monthly) {
         const res = await restorePro({});
         await refreshSubscription();
         if (res?.ok) {
           setPayError(null);
-          toast.success("Pro subscription restored.");
+          toast.success(
+            res.reason === "resumed" ? "Auto-renewal turned back on." : "Pro subscription restored.",
+          );
         } else {
           toast("No previous purchases found");
         }
