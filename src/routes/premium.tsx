@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { X, Check, Minus, Star, Sparkles } from "lucide-react";
+import { X, Check, Minus, Sparkles } from "lucide-react";
 import { toast } from "sonner";
+import ghost from "@/assets/kender-ghost.png";
 
 export const Route = createFileRoute("/premium")({
   head: () => ({
@@ -16,14 +17,14 @@ export const Route = createFileRoute("/premium")({
 type PlanId = "monthly" | "yearly";
 
 const PLANS: Record<PlanId, { label: string; price: string; per: string; badge?: string }> = {
-  monthly: { label: "Per Month", price: "₹999", per: "₹32.85 / day" },
-  yearly: { label: "Per Year", price: "₹8,999", per: "₹24.65 / day", badge: "25% OFF" },
+  monthly: { label: "Per Month", price: "₹ 999", per: "₹32.85 / day" },
+  yearly: { label: "Per Year", price: "₹ 8,999", per: "₹24.65 / day", badge: "25% OFF" },
 };
 
-const FEATURES: { name: string; free: string | null; starred?: boolean }[] = [
-  { name: "Better memory", free: null, starred: true },
-  { name: "More intelligent", free: null, starred: true },
-  { name: "Image generation", free: "1/daily", starred: true },
+const FEATURES: { name: string; free: string | null }[] = [
+  { name: "Better memory", free: null },
+  { name: "More intelligent", free: null },
+  { name: "Image generation", free: "1/daily" },
   { name: "Faster response", free: null },
   { name: "No ads", free: null },
   { name: "Unlimited messages", free: "25/daily" },
@@ -45,19 +46,26 @@ function PremiumPage() {
   return (
     <div className="safe-top relative flex min-h-screen flex-col overflow-hidden bg-background pb-8">
       {/* Top bar */}
-      <div className="relative z-10 flex items-center px-4 pt-4">
+      <div className="relative z-10 flex items-center justify-between px-4 pt-4">
         <button
           onClick={() => navigate({ to: "/settings" })}
           aria-label="Close"
-          className="flex h-9 w-9 items-center justify-center rounded-full bg-surface/80 text-foreground backdrop-blur-sm transition-colors hover:bg-surface-2 active:bg-surface-2"
+          className="flex h-10 w-10 items-center justify-center rounded-full bg-surface/80 text-foreground backdrop-blur-sm transition-colors hover:bg-surface-2 active:bg-surface-2"
         >
           <X className="h-5 w-5" />
         </button>
+        <button
+          onClick={() => toast("No previous purchases found")}
+          className="rounded-full bg-surface/80 px-4 py-2 text-sm font-medium text-foreground backdrop-blur-sm transition-colors hover:bg-surface-2 active:bg-surface-2"
+        >
+          Restore
+        </button>
       </div>
 
-      {/* Title */}
-      <div className="relative z-10 mt-2 px-6 text-center">
-        <h1 className="text-2xl font-bold tracking-tight text-foreground">Upgrade to Pro</h1>
+      {/* Logo + title */}
+      <div className="relative z-10 mt-4 flex flex-col items-center px-6 text-center">
+        <img src={ghost} alt="Kender" className="h-14 w-14" />
+        <h1 className="mt-4 text-2xl font-bold tracking-tight text-foreground">Upgrade to Pro</h1>
         <p className="mt-1 text-sm text-muted-foreground">Unlock every premium feature.</p>
       </div>
 
@@ -70,7 +78,7 @@ function PremiumPage() {
             <button
               key={id}
               onClick={() => setPlan(id)}
-              className={`relative flex flex-col items-center rounded-3xl px-4 py-6 text-center transition-all duration-200 active:scale-[0.98] ${
+              className={`relative flex flex-col items-center rounded-3xl px-4 py-5 text-center transition-all duration-200 active:scale-[0.98] ${
                 active
                   ? "border-2 border-primary bg-surface"
                   : "border border-white/10 bg-surface/60 hover:border-white/20 hover:bg-surface/80"
@@ -85,7 +93,7 @@ function PremiumPage() {
                 {p.label}
               </p>
               <p
-                className={`mt-3 text-4xl font-bold tracking-tight ${
+                className={`mt-2 text-3xl font-bold tracking-tight ${
                   active ? "text-foreground" : "text-foreground/80"
                 }`}
               >
@@ -102,7 +110,7 @@ function PremiumPage() {
         <div className="grid grid-cols-[1fr_64px_64px] items-center border-b border-white/10 px-4 py-4 text-xs font-medium uppercase tracking-wider text-muted-foreground">
           <span>Features</span>
           <span className="text-center">Free</span>
-          <span className="text-center text-primary">Pro</span>
+          <span className="text-center text-success">Pro</span>
         </div>
         {FEATURES.map((f, i) => (
           <div
@@ -111,22 +119,24 @@ function PremiumPage() {
               i !== FEATURES.length - 1 ? "border-b border-white/10" : ""
             }`}
           >
-            <span className="flex items-center gap-2 pr-2 font-medium text-foreground/95">
-              {f.starred && <Star className="h-3.5 w-3.5 shrink-0 fill-primary text-primary" />}
-              {f.name}
-            </span>
+            <span className="flex items-center pr-2 font-medium text-foreground/95">{f.name}</span>
             <div className="flex justify-center text-xs font-medium text-muted-foreground">
               {f.free ?? <Minus className="h-4 w-4" />}
             </div>
             <div className="flex justify-center">
-              <Check className="h-5 w-5 text-primary" strokeWidth={2.5} />
+              <Check className="h-5 w-5 text-success" strokeWidth={2.5} />
             </div>
           </div>
         ))}
       </div>
 
+      {/* Auto-renew note */}
+      <p className="relative z-10 mt-5 text-center text-xs text-muted-foreground">
+        Auto-renews {plan === "yearly" ? "yearly" : "monthly"}. Cancel anytime.
+      </p>
+
       {/* CTA */}
-      <div className="mt-auto px-4 pt-6">
+      <div className="mt-auto px-4 pt-4">
         <button
           onClick={handleSubscribe}
           disabled={loading}
