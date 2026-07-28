@@ -47,7 +47,7 @@ function PremiumPage() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [plan, setPlan] = useState<PlanId>("yearly");
-  const { isPro, plan: activePlan, currentPeriodEnd, syncing } = useSubscription();
+  const { isPro, plan: activePlan, currentPeriodEnd, cancelAtPeriodEnd, syncing } = useSubscription();
   const [payError, setPayError] = useState<null | "canceled" | "timeout">(null);
   const [restoring, setRestoring] = useState(false);
   const activatePro = useServerFn(activateProDirect);
