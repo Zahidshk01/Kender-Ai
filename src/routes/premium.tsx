@@ -1,10 +1,19 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { ChevronLeft, Check, Minus, Sparkles } from "lucide-react";
+import { ChevronLeft, Check, Minus, Sparkles, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import ghost from "@/assets/kender-ghost.png";
-import { STRIPE_LINKS, useSubscription, withUserRef } from "@/lib/subscription";
+import {
+  STRIPE_LINKS,
+  pollForProAfterCheckout,
+  refreshSubscription,
+  useSubscription,
+  withUserRef,
+} from "@/lib/subscription";
 import { supabase } from "@/integrations/supabase/client";
+
+const CHECKOUT_FLAG = "kender:checkout-pending";
+
 
 
 
