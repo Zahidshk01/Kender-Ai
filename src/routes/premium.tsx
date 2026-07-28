@@ -11,6 +11,8 @@ import {
   withUserRef,
 } from "@/lib/subscription";
 import { supabase } from "@/integrations/supabase/client";
+import { useServerFn } from "@tanstack/react-start";
+import { activateProDirect, cancelProDirect } from "@/lib/subscription.functions";
 
 const CHECKOUT_FLAG = "kender:checkout-pending";
 
