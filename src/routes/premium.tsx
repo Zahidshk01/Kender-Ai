@@ -47,7 +47,7 @@ function PremiumPage() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [plan, setPlan] = useState<PlanId>("yearly");
-  const { isPro, plan: activePlan, currentPeriodEnd, syncing } = useSubscription();
+  const { isPro, plan: activePlan, currentPeriodEnd, cancelAtPeriodEnd, syncing } = useSubscription();
   const [payError, setPayError] = useState<null | "canceled" | "timeout">(null);
   const [restoring, setRestoring] = useState(false);
   const activatePro = useServerFn(activateProDirect);
@@ -123,18 +123,20 @@ function PremiumPage() {
     setRestoring(true);
     try {
       const current = await refreshSubscription();
-      if (current.isPro) {
+      if (current.isPro && !current.cancelAtPeriodEnd) {
         setPayError(null);
         toast.success("Pro subscription restored.");
         return;
       }
-      // Direct mode: re-activate a previously purchased plan.
+      // Direct mode: resume auto-renewal or re-activate a purchased plan.
       if (!STRIPE_LINKS.monthly) {
         const res = await restorePro({});
         await refreshSubscription();
         if (res?.ok) {
           setPayError(null);
-          toast.success("Pro subscription restored.");
+          toast.success(
+            res.reason === "resumed" ? "Auto-renewal turned back on." : "Pro subscription restored.",
+          );
         } else {
           toast("No previous purchases found");
         }
@@ -179,9 +181,13 @@ function PremiumPage() {
     if (!STRIPE_LINKS.cancel) {
       setCanceling(true);
       try {
-        await cancelPro({});
+        const res = await cancelPro({});
         await refreshSubscription();
-        toast("Your Pro plan has been canceled.");
+        toast(
+          res?.activeUntil
+            ? `Auto-renewal canceled. Pro stays active until ${new Date(res.activeUntil).toLocaleDateString()}.`
+            : "Your Pro plan has been canceled.",
+        );
       } catch {
         toast.error("Couldn't cancel the plan. Please try again.");
       } finally {
@@ -266,9 +272,16 @@ function PremiumPage() {
           <p className="mt-1 text-xs text-muted-foreground">
             {activePlan === "yearly" ? "Yearly plan" : "Monthly plan"} active
             {currentPeriodEnd
-              ? ` · renews ${new Date(currentPeriodEnd).toLocaleDateString()}`
+              ? cancelAtPeriodEnd
+                ? ` · auto-renew off · expires ${new Date(currentPeriodEnd).toLocaleDateString()}`
+                : ` · renews ${new Date(currentPeriodEnd).toLocaleDateString()}`
               : ""}
           </p>
+          {cancelAtPeriodEnd && (
+            <p className="mt-1 text-[11px] text-muted-foreground">
+              You keep every Pro feature until then. Tap Restore to turn auto-renew back on.
+            </p>
+          )}
         </div>
       )}
 
@@ -349,17 +362,32 @@ function PremiumPage() {
 
       {/* Auto-renew note */}
       <p className="relative z-10 mt-5 text-center text-xs text-muted-foreground">
-        Auto-renews {plan === "yearly" ? "yearly" : "monthly"}.{" "}
-        {isPro ? (
-          <button
-            onClick={handleCancel}
-            disabled={canceling}
-            className="underline underline-offset-2 transition-colors hover:text-foreground disabled:opacity-60"
-          >
-            {canceling ? "Canceling…" : "Cancel anytime."}
-          </button>
+        {isPro && cancelAtPeriodEnd ? (
+          <>
+            Auto-renew is off.{" "}
+            <button
+              onClick={handleRestore}
+              disabled={restoring}
+              className="underline underline-offset-2 transition-colors hover:text-foreground disabled:opacity-60"
+            >
+              {restoring ? "Turning on…" : "Turn auto-renew back on."}
+            </button>
+          </>
         ) : (
-          "Cancel anytime."
+          <>
+            Auto-renews {plan === "yearly" ? "yearly" : "monthly"}.{" "}
+            {isPro ? (
+              <button
+                onClick={handleCancel}
+                disabled={canceling}
+                className="underline underline-offset-2 transition-colors hover:text-foreground disabled:opacity-60"
+              >
+                {canceling ? "Canceling…" : "Cancel anytime."}
+              </button>
+            ) : (
+              "Cancel anytime."
+            )}
+          </>
         )}
       </p>
 
