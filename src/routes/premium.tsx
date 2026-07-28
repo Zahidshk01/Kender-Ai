@@ -1,10 +1,19 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { ChevronLeft, Check, Minus, Sparkles } from "lucide-react";
+import { ChevronLeft, Check, Minus, Sparkles, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import ghost from "@/assets/kender-ghost.png";
-import { STRIPE_LINKS, useSubscription, withUserRef } from "@/lib/subscription";
+import {
+  STRIPE_LINKS,
+  pollForProAfterCheckout,
+  refreshSubscription,
+  useSubscription,
+  withUserRef,
+} from "@/lib/subscription";
 import { supabase } from "@/integrations/supabase/client";
+
+const CHECKOUT_FLAG = "kender:checkout-pending";
+
 
 
 
@@ -38,7 +47,34 @@ function PremiumPage() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [plan, setPlan] = useState<PlanId>("yearly");
-  const { isPro, plan: activePlan, currentPeriodEnd } = useSubscription();
+  const { isPro, plan: activePlan, currentPeriodEnd, syncing } = useSubscription();
+
+  // Coming back from Stripe (redirect, tab switch, or back button):
+  // re-check entitlement until the webhook lands — no manual reload needed.
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const fromStripe =
+      params.get("checkout") === "success" ||
+      sessionStorage.getItem(CHECKOUT_FLAG) === "1";
+    if (!fromStripe) return;
+
+    sessionStorage.removeItem(CHECKOUT_FLAG);
+    if (params.has("checkout")) {
+      params.delete("checkout");
+      const qs = params.toString();
+      window.history.replaceState({}, "", window.location.pathname + (qs ? `?${qs}` : ""));
+    }
+
+    let cancelled = false;
+    void pollForProAfterCheckout().then((pro) => {
+      if (cancelled) return;
+      if (pro) toast.success("Congratulations for KENDER PRO!");
+      else toast("No active subscription found yet. You're still on the Free plan.");
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   async function handleSubscribe() {
     const link = STRIPE_LINKS[plan];
@@ -47,6 +83,7 @@ function PremiumPage() {
       return;
     }
     setLoading(true);
+    sessionStorage.setItem(CHECKOUT_FLAG, "1");
     const { data } = await supabase.auth.getSession();
     window.location.href = withUserRef(link, data.session?.user.id ?? null, plan);
   }
@@ -57,7 +94,10 @@ function PremiumPage() {
       toast("Cancellation link coming soon — add your Stripe billing portal link.");
       return;
     }
+    sessionStorage.setItem(CHECKOUT_FLAG, "1");
+    void refreshSubscription();
     window.location.href = STRIPE_LINKS.cancel;
+
   }
 
   return (
@@ -72,14 +112,25 @@ function PremiumPage() {
           <ChevronLeft className="h-5 w-5" />
         </button>
         <button
-          onClick={() => toast("No previous purchases found")}
+          onClick={async () => {
+            const s = await refreshSubscription();
+            toast(s.isPro ? "Pro subscription restored." : "No previous purchases found");
+          }}
           className="rounded-full bg-surface/80 px-4 py-2 text-sm font-medium text-foreground backdrop-blur-sm transition-colors hover:bg-surface-2 active:bg-surface-2"
         >
           Restore
         </button>
       </div>
 
+      {syncing && !isPro && (
+        <div className="relative z-10 mx-4 mt-4 flex items-center justify-center gap-2 rounded-3xl bg-surface px-4 py-3">
+          <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+          <p className="text-sm text-muted-foreground">Confirming your payment…</p>
+        </div>
+      )}
+
       {isPro && (
+
         <div className="relative z-10 mx-4 mt-4 rounded-3xl border border-amber-400/30 bg-amber-400/10 px-4 py-4 text-center">
           <p className="bg-gradient-to-r from-amber-300 via-amber-400 to-amber-600 bg-clip-text text-lg font-extrabold tracking-tight text-transparent">
             Congratulations for KENDER PRO
