@@ -341,10 +341,6 @@ export type Database = {
         Args: { _key: string; _limit: number; _window_seconds: number }
         Returns: boolean
       }
-      is_username_available: {
-        Args: { _user_id: string; _username: string }
-        Returns: boolean
-      }
     }
     Enums: {
       [_ in never]: never
