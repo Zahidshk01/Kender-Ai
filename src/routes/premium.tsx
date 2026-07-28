@@ -266,9 +266,16 @@ function PremiumPage() {
           <p className="mt-1 text-xs text-muted-foreground">
             {activePlan === "yearly" ? "Yearly plan" : "Monthly plan"} active
             {currentPeriodEnd
-              ? ` · renews ${new Date(currentPeriodEnd).toLocaleDateString()}`
+              ? cancelAtPeriodEnd
+                ? ` · auto-renew off · expires ${new Date(currentPeriodEnd).toLocaleDateString()}`
+                : ` · renews ${new Date(currentPeriodEnd).toLocaleDateString()}`
               : ""}
           </p>
+          {cancelAtPeriodEnd && (
+            <p className="mt-1 text-[11px] text-muted-foreground">
+              You keep every Pro feature until then. Tap Restore to turn auto-renew back on.
+            </p>
+          )}
         </div>
       )}
 
