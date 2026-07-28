@@ -70,7 +70,7 @@ function PremiumPage() {
       </div>
 
       {/* Plan cards */}
-      <div className="relative z-10 mt-6 grid grid-cols-2 gap-3 px-4">
+      <div className="relative z-10 mt-8 grid grid-cols-2 gap-3 px-4">
         {(Object.keys(PLANS) as PlanId[]).map((id) => {
           const p = PLANS[id];
           const active = plan === id;
@@ -78,57 +78,59 @@ function PremiumPage() {
             <button
               key={id}
               onClick={() => setPlan(id)}
-              className={`relative flex flex-col items-center rounded-3xl px-4 py-5 text-center transition-all duration-200 active:scale-[0.98] ${
+              className={`relative flex flex-col items-start rounded-3xl px-4 py-4 text-left transition-all duration-200 active:scale-[0.98] ${
                 active
-                  ? "border-2 border-primary bg-surface"
-                  : "border border-white/10 bg-surface/60 hover:border-white/20 hover:bg-surface/80"
+                  ? "border-2 border-white/80 bg-surface"
+                  : "border border-white/10 bg-surface/60 hover:border-white/20"
               }`}
             >
               {p.badge && (
-                <span className="absolute -top-3 left-1/2 z-20 -translate-x-1/2 whitespace-nowrap rounded-full bg-yellow-400 px-3 py-1 text-[10px] font-bold tracking-wide text-black shadow-lg">
+                <span className="absolute -top-3 left-1/2 z-20 -translate-x-1/2 whitespace-nowrap rounded-full bg-primary px-3 py-1 text-[10px] font-semibold tracking-wide text-primary-foreground shadow-lg">
                   {p.badge}
                 </span>
               )}
-              <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                {p.label}
-              </p>
-              <p
-                className={`mt-2 text-3xl font-bold tracking-tight ${
-                  active ? "text-foreground" : "text-foreground/80"
-                }`}
-              >
-                {p.price}
-              </p>
-              <p className="mt-1.5 text-xs text-muted-foreground">{p.per}</p>
+              <p className="text-[15px] font-semibold text-foreground">{p.label}</p>
+              <div className="mt-2 flex w-full items-center justify-between gap-2">
+                <div>
+                  <p className="text-xl font-bold tracking-tight text-foreground">{p.price}</p>
+                  <p className="mt-1 text-xs text-muted-foreground">{p.per}</p>
+                </div>
+                <span
+                  className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full border-2 ${
+                    active ? "border-foreground bg-foreground" : "border-white/25"
+                  }`}
+                >
+                  {active && <span className="h-2 w-2 rounded-full bg-background" />}
+                </span>
+              </div>
             </button>
           );
         })}
       </div>
 
       {/* Features table */}
-      <div className="relative z-10 mx-4 mt-7 overflow-hidden rounded-3xl border border-white/10 bg-surface">
-        <div className="grid grid-cols-[1fr_64px_64px] items-center border-b border-white/10 px-4 py-4 text-xs font-medium uppercase tracking-wider text-muted-foreground">
+      <div className="relative z-10 mx-4 mt-7 overflow-hidden rounded-3xl bg-surface px-4 py-2">
+        <div className="grid grid-cols-[1fr_56px_56px] items-center py-3 text-sm font-medium text-muted-foreground">
           <span>Features</span>
           <span className="text-center">Free</span>
-          <span className="text-center text-success">Pro</span>
+          <span className="text-center text-primary">Pro</span>
         </div>
-        {FEATURES.map((f, i) => (
+        {FEATURES.map((f) => (
           <div
             key={f.name}
-            className={`grid grid-cols-[1fr_64px_64px] items-center px-4 py-4 text-sm ${
-              i !== FEATURES.length - 1 ? "border-b border-white/10" : ""
-            }`}
+            className="grid grid-cols-[1fr_56px_56px] items-center py-3.5 text-sm"
           >
-            <span className="flex items-center pr-2 font-medium text-foreground/95">{f.name}</span>
+            <span className="flex items-center pr-2 text-foreground/95">{f.name}</span>
             <div className="flex justify-center text-xs font-medium text-muted-foreground">
-              {f.free ?? <Minus className="h-4 w-4" />}
+              {f.free ?? <Minus className="h-4 w-4" strokeWidth={3} />}
             </div>
             <div className="flex justify-center">
-              <Check className="h-5 w-5 text-success" strokeWidth={2.5} />
+              <Check className="h-5 w-5 text-primary" strokeWidth={3} />
             </div>
           </div>
         ))}
       </div>
+
 
       {/* Auto-renew note */}
       <p className="relative z-10 mt-5 text-center text-xs text-muted-foreground">
