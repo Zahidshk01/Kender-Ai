@@ -1,8 +1,9 @@
 import { useState } from "react";
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import {
-  ChevronLeft, ChevronRight, Mail, FileText, ShieldCheck, Info, LogOut, Trash2, BadgeCheck, ShieldOff,
+  ChevronLeft, ChevronRight, Mail, FileText, ShieldCheck, Info, LogOut, Trash2, BadgeCheck, ShieldOff, Crown,
 } from "lucide-react";
+import { useSubscription } from "@/lib/subscription";
 import { supabase } from "@/integrations/supabase/client";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription,
@@ -26,6 +27,7 @@ const APP_VERSION = "v2.4.1";
 function SettingsPage() {
   const navigate = useNavigate();
   const [infoDialog, setInfoDialog] = useState<null | "contact" | "terms" | "version" | "blocked">(null);
+  const { isPro } = useSubscription();
   const [confirm, setConfirm] = useState<null | "signout" | "delete">(null);
 
   async function handleSignOut() {
@@ -74,10 +76,25 @@ function SettingsPage() {
       {/* Menu card */}
       <div className="mx-4 mt-4 overflow-hidden rounded-2xl bg-surface">
         <Row
+          icon={<Crown className="h-5 w-5 text-foreground/80" />}
+          label="Plan"
+          right={
+            isPro ? (
+              <span className="bg-gradient-to-r from-amber-300 via-amber-400 to-amber-600 bg-clip-text text-sm font-bold text-transparent">
+                Premium
+              </span>
+            ) : (
+              <span className="text-sm text-muted-foreground">Free</span>
+            )
+          }
+          onClick={() => navigate({ to: "/premium" })}
+        />
+        <Row
           icon={<Mail className="h-5 w-5 text-foreground/80" />}
           label="Contact Us"
           onClick={() => setInfoDialog("contact")}
         />
+
         <Row
           icon={<FileText className="h-5 w-5 text-foreground/80" />}
           label="Terms of Service"

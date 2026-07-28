@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { ChevronLeft, Check, Minus, Sparkles, Loader2 } from "lucide-react";
+import { ChevronLeft, Check, Minus, Sparkles, Loader2, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
 import ghost from "@/assets/kender-ghost.png";
 import {
@@ -48,13 +48,18 @@ function PremiumPage() {
   const [loading, setLoading] = useState(false);
   const [plan, setPlan] = useState<PlanId>("yearly");
   const { isPro, plan: activePlan, currentPeriodEnd, syncing } = useSubscription();
+  const [payError, setPayError] = useState<null | "canceled" | "timeout">(null);
+  const [restoring, setRestoring] = useState(false);
 
   // Coming back from Stripe (redirect, tab switch, or back button):
   // re-check entitlement until the webhook lands — no manual reload needed.
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
+    const checkout = params.get("checkout");
     const fromStripe =
-      params.get("checkout") === "success" ||
+      checkout === "success" ||
+      checkout === "cancel" ||
+      checkout === "canceled" ||
       sessionStorage.getItem(CHECKOUT_FLAG) === "1";
     if (!fromStripe) return;
 
@@ -65,16 +70,45 @@ function PremiumPage() {
       window.history.replaceState({}, "", window.location.pathname + (qs ? `?${qs}` : ""));
     }
 
+    if (checkout === "cancel" || checkout === "canceled") {
+      setPayError("canceled");
+      return;
+    }
+
     let cancelled = false;
     void pollForProAfterCheckout().then((pro) => {
       if (cancelled) return;
-      if (pro) toast.success("Congratulations for KENDER PRO!");
-      else toast("No active subscription found yet. You're still on the Free plan.");
+      if (pro) {
+        setPayError(null);
+        toast.success("Congratulations for KENDER PRO!");
+      } else {
+        setPayError("timeout");
+      }
     });
     return () => {
       cancelled = true;
     };
   }, []);
+
+  useEffect(() => {
+    if (isPro) setPayError(null);
+  }, [isPro]);
+
+  async function handleRestore() {
+    setRestoring(true);
+    try {
+      const s = await refreshSubscription();
+      if (s.isPro) {
+        setPayError(null);
+        toast.success("Pro subscription restored.");
+      } else {
+        toast("No previous purchases found");
+      }
+    } finally {
+      setRestoring(false);
+    }
+  }
+
 
   async function handleSubscribe() {
     const link = STRIPE_LINKS[plan];
@@ -82,6 +116,7 @@ function PremiumPage() {
       toast("Payment link coming soon — add your Stripe link to enable checkout.");
       return;
     }
+    setPayError(null);
     setLoading(true);
     sessionStorage.setItem(CHECKOUT_FLAG, "1");
     const { data } = await supabase.auth.getSession();
@@ -112,13 +147,11 @@ function PremiumPage() {
           <ChevronLeft className="h-5 w-5" />
         </button>
         <button
-          onClick={async () => {
-            const s = await refreshSubscription();
-            toast(s.isPro ? "Pro subscription restored." : "No previous purchases found");
-          }}
-          className="rounded-full bg-surface/80 px-4 py-2 text-sm font-medium text-foreground backdrop-blur-sm transition-colors hover:bg-surface-2 active:bg-surface-2"
+          onClick={handleRestore}
+          disabled={restoring}
+          className="rounded-full bg-surface/80 px-4 py-2 text-sm font-medium text-foreground backdrop-blur-sm transition-colors hover:bg-surface-2 active:bg-surface-2 disabled:opacity-60"
         >
-          Restore
+          {restoring ? "Restoring…" : "Restore"}
         </button>
       </div>
 
@@ -128,6 +161,39 @@ function PremiumPage() {
           <p className="text-sm text-muted-foreground">Confirming your payment…</p>
         </div>
       )}
+
+      {payError && !isPro && !syncing && (
+        <div className="relative z-10 mx-4 mt-4 rounded-3xl border border-destructive/40 bg-destructive/10 px-4 py-4">
+          <div className="flex items-start gap-3">
+            <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-destructive" />
+            <div className="flex-1">
+              <p className="text-sm font-semibold text-foreground">Payment not confirmed</p>
+              <p className="mt-1 text-xs text-muted-foreground">
+                {payError === "canceled"
+                  ? "Your Stripe checkout was canceled, so you're still on the Free plan."
+                  : "We couldn't confirm your payment in time. If you were charged, tap Restore."}
+              </p>
+              <div className="mt-3 flex gap-2">
+                <button
+                  onClick={handleSubscribe}
+                  disabled={loading}
+                  className="rounded-full bg-white px-4 py-2 text-xs font-semibold text-black disabled:opacity-60"
+                >
+                  Retry payment
+                </button>
+                <button
+                  onClick={handleRestore}
+                  disabled={restoring}
+                  className="rounded-full bg-surface px-4 py-2 text-xs font-semibold text-foreground disabled:opacity-60"
+                >
+                  {restoring ? "Restoring…" : "Restore"}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
 
       {isPro && (
 
