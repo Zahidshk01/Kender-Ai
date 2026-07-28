@@ -69,14 +69,21 @@ function CreatePage() {
       const json = (await res.json()) as {
         image?: string;
         error?: string;
+        code?: string;
         modelLabel?: string;
         fellBack?: boolean;
       };
       if (!res.ok || !json.image) {
-        if (res.status === 429) toast("Rate limit hit. Try again in a moment.");
+        if (json.code === "limit_reached") {
+          toast.error("Limit reached — GET PRO", {
+            description: json.error,
+            action: { label: "Get Pro", onClick: () => { window.location.href = "/premium"; } },
+          });
+        } else if (res.status === 429) toast("Rate limit hit. Try again in a moment.");
         else if (res.status === 402) toast("Out of AI credits. Add funds to continue.");
         else toast(json.error || "Couldn't generate image");
       } else {
+
         setImage(json.image);
         if (json.fellBack && json.modelLabel) {
           toast(`Switched to ${json.modelLabel} — primary model unavailable`);

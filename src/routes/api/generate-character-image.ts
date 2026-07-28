@@ -9,42 +9,92 @@ const schema = z.object({
     .optional(),
 });
 
-async function requireAuth(request: Request): Promise<Response | null> {
+// Free plan: 1 image generation / day. Pro: unlimited.
+const FREE_IMAGES_PER_DAY = 1;
+
+type AuthResult = { userId: string } | { errorResponse: Response };
+
+async function requireAuth(request: Request): Promise<AuthResult> {
   const authHeader = request.headers.get("authorization");
   if (!authHeader?.startsWith("Bearer ")) {
-    return new Response(JSON.stringify({ error: "Unauthorized" }), {
-      status: 401,
-      headers: { "Content-Type": "application/json" },
-    });
+    return {
+      errorResponse: new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401,
+        headers: { "Content-Type": "application/json" },
+      }),
+    };
   }
   const token = authHeader.slice("Bearer ".length);
   const url = process.env.SUPABASE_URL;
   const key = process.env.SUPABASE_PUBLISHABLE_KEY;
   if (!url || !key) {
-    return new Response(JSON.stringify({ error: "Server misconfigured" }), {
-      status: 500,
-      headers: { "Content-Type": "application/json" },
-    });
+    return {
+      errorResponse: new Response(JSON.stringify({ error: "Server misconfigured" }), {
+        status: 500,
+        headers: { "Content-Type": "application/json" },
+      }),
+    };
   }
   const supabase = createClient(url, key, {
     auth: { persistSession: false, autoRefreshToken: false, storage: undefined },
   });
   const { data, error } = await supabase.auth.getClaims(token);
-  if (error || !data?.claims?.sub) {
-    return new Response(JSON.stringify({ error: "Unauthorized" }), {
-      status: 401,
-      headers: { "Content-Type": "application/json" },
-    });
+  const userId = data?.claims?.sub;
+  if (error || !userId) {
+    return {
+      errorResponse: new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401,
+        headers: { "Content-Type": "application/json" },
+      }),
+    };
   }
-  return null;
+  return { userId };
 }
+
+async function consumeQuota(
+  userId: string,
+  kind: "messages" | "images",
+  freeLimit: number
+): Promise<{ allowed: boolean; is_pro: boolean; used: number; limit: number }> {
+  try {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data, error } = await (supabaseAdmin as any).rpc("consume_quota", {
+      _user_id: userId,
+      _kind: kind,
+      _free_limit: freeLimit,
+    });
+    if (error) {
+      console.error("[generate-character-image] quota RPC error", error);
+      return { allowed: true, is_pro: false, used: 0, limit: freeLimit };
+    }
+    return data as { allowed: boolean; is_pro: boolean; used: number; limit: number };
+  } catch (e) {
+    console.error("[generate-character-image] quota exception", e);
+    return { allowed: true, is_pro: false, used: 0, limit: freeLimit };
+  }
+}
+
 
 export const Route = createFileRoute("/api/generate-character-image")({
   server: {
     handlers: {
       POST: async ({ request }) => {
-        const authFail = await requireAuth(request);
-        if (authFail) return authFail;
+        const auth = await requireAuth(request);
+        if ("errorResponse" in auth) return auth.errorResponse;
+
+        const quota = await consumeQuota(auth.userId, "images", FREE_IMAGES_PER_DAY);
+        if (!quota.allowed) {
+          return new Response(
+            JSON.stringify({
+              error: `Limit reached — free plan allows ${quota.limit} image per day. Get Pro for unlimited image generation.`,
+              code: "limit_reached",
+              kind: "images",
+              limit: quota.limit,
+            }),
+            { status: 402, headers: { "Content-Type": "application/json" } }
+          );
+        }
+
 
         let body: unknown;
         try {

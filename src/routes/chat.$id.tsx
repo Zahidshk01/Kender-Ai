@@ -9,6 +9,8 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { blockTarget, reportTarget } from "@/lib/block-store";
 import { toast } from "sonner";
+import { useIsPro } from "@/lib/subscription";
+
 
 export const Route = createFileRoute("/chat/$id")({
   head: ({ params }) => {
@@ -44,6 +46,9 @@ function ChatPage() {
   const [msgs, setMsgs] = useState<Msg[]>([]);
   const [userId, setUserId] = useState<string | null>(null);
   const [sending, setSending] = useState(false);
+  const [limitReached, setLimitReached] = useState(false);
+  const isPro = useIsPro();
+
   const [reportOpen, setReportOpen] = useState(false);
   const [confirmBlock, setConfirmBlock] = useState(false);
   const [confirmRestart, setConfirmRestart] = useState(false);
@@ -177,11 +182,16 @@ function ChatPage() {
       }),
     });
     const data = await res.json();
+    if (data?.code === "limit_reached") {
+      setLimitReached(true);
+      throw new Error(data.error || "Limit reached — GET PRO");
+    }
     if (!res.ok) throw new Error(data?.details || data?.error || "Chat request failed");
     const replyText = data.reply?.trim();
     if (!replyText) throw new Error("No reply returned");
     return replyText;
   };
+
 
   const send = async () => {
     const v = text.trim();
@@ -322,12 +332,19 @@ function ChatPage() {
             <div className="text-lg font-bold tracking-[0.2em]">KENDER</div>
           </div>
           <div className="ml-auto flex items-center gap-2">
-          <button
-            onClick={() => navigate({ to: "/premium" })}
-            className="rounded-full bg-gradient-to-r from-amber-400 to-amber-600 px-3 py-1 text-xs font-bold text-black active:scale-95"
-          >
-            Get Pro
-          </button>
+          {isPro ? (
+            <span className="bg-gradient-to-r from-amber-300 via-amber-400 to-amber-600 bg-clip-text px-1 text-xs font-extrabold uppercase tracking-widest text-transparent">
+              Premium
+            </span>
+          ) : (
+            <button
+              onClick={() => navigate({ to: "/premium" })}
+              className="rounded-full bg-gradient-to-r from-amber-400 to-amber-600 px-3 py-1 text-xs font-bold text-black active:scale-95"
+            >
+              Get Pro
+            </button>
+          )}
+
           <Popover>
             <PopoverTrigger asChild>
               <button aria-label="More" className="flex h-9 w-9 items-center justify-center rounded-full bg-surface active:scale-95">
@@ -432,31 +449,47 @@ function ChatPage() {
       )}
 
       <div className="fixed inset-x-0 bottom-0 left-1/2 z-40 w-full max-w-md -translate-x-1/2 border-t border-border bg-background/90 px-3 py-3 backdrop-blur-xl safe-bottom md:bottom-6 md:rounded-b-[40px]">
-        <div className="flex items-center gap-2">
-          <div className="flex flex-1 items-center rounded-full bg-surface px-4 py-2">
-            <input
-              value={text}
-              onChange={(e) => setText(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") {
-                  e.preventDefault();
-                  send();
-                }
-              }}
-              placeholder="Type a message"
-              className="h-9 flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground"
-            />
-          </div>
+        {limitReached && !isPro ? (
           <button
-            onClick={send}
-            aria-label="Send"
-            disabled={sending}
-            className="flex h-11 w-11 items-center justify-center rounded-full gradient-accent text-primary-foreground shadow-accent active:scale-95 disabled:opacity-60"
+            onClick={() => navigate({ to: "/premium" })}
+            className="flex w-full flex-col items-center gap-1 rounded-3xl bg-surface px-4 py-4 active:scale-[0.99]"
           >
-            <Send className="h-5 w-5" />
+            <span className="text-sm font-semibold text-foreground">Limit reached</span>
+            <span className="bg-gradient-to-r from-amber-300 via-amber-400 to-amber-600 bg-clip-text text-base font-extrabold uppercase tracking-widest text-transparent">
+              Get Pro
+            </span>
+            <span className="text-xs text-muted-foreground">
+              You've used all 25 free messages today. Upgrade for unlimited chats.
+            </span>
           </button>
-        </div>
+        ) : (
+          <div className="flex items-center gap-2">
+            <div className="flex flex-1 items-center rounded-full bg-surface px-4 py-2">
+              <input
+                value={text}
+                onChange={(e) => setText(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    send();
+                  }
+                }}
+                placeholder="Type a message"
+                className="h-9 flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground"
+              />
+            </div>
+            <button
+              onClick={send}
+              aria-label="Send"
+              disabled={sending}
+              className="flex h-11 w-11 items-center justify-center rounded-full gradient-accent text-primary-foreground shadow-accent active:scale-95 disabled:opacity-60"
+            >
+              <Send className="h-5 w-5" />
+            </button>
+          </div>
+        )}
       </div>
+
 
       {/* Report dialog */}
       <Dialog open={reportOpen} onOpenChange={setReportOpen}>
