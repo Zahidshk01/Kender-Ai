@@ -103,17 +103,32 @@ function PremiumPage() {
   async function handleRestore() {
     setRestoring(true);
     try {
-      const s = await refreshSubscription();
-      if (s.isPro) {
+      const current = await refreshSubscription();
+      if (current.isPro) {
         setPayError(null);
         toast.success("Pro subscription restored.");
-      } else {
-        toast("No previous purchases found");
+        return;
       }
+      // Direct mode: re-activate a previously purchased plan.
+      if (!STRIPE_LINKS.monthly) {
+        const res = await restorePro({});
+        await refreshSubscription();
+        if (res?.ok) {
+          setPayError(null);
+          toast.success("Pro subscription restored.");
+        } else {
+          toast("No previous purchases found");
+        }
+        return;
+      }
+      toast("No previous purchases found");
+    } catch {
+      toast.error("Couldn't restore your plan. Please try again.");
     } finally {
       setRestoring(false);
     }
   }
+
 
 
   async function handleSubscribe() {
