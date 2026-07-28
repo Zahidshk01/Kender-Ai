@@ -53,6 +53,27 @@ function PremiumPage() {
   const restorePro = useServerFn(restoreProDirect);
   const [canceling, setCanceling] = useState(false);
 
+  // Localised pricing — resolved after mount so SSR markup stays stable.
+  const [country, setCountry] = useState<string>("US");
+  useEffect(() => {
+    setCountry(detectCountry());
+  }, []);
+  const pricing = getPricing(country);
+  const PLANS: Record<PlanId, { label: string; price: string; per: string; badge?: string }> = {
+    monthly: {
+      label: "Per Month",
+      price: formatPrice(pricing, pricing.monthly),
+      per: perDay(pricing, "monthly"),
+    },
+    yearly: {
+      label: "Per Year",
+      price: formatPrice(pricing, pricing.yearly),
+      per: perDay(pricing, "yearly"),
+      badge: `${yearlyDiscount(pricing)}% OFF`,
+    },
+  };
+
+
   // Coming back from Stripe (redirect, tab switch, or back button):
   // re-check entitlement until the webhook lands — no manual reload needed.
   useEffect(() => {
