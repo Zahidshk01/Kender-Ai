@@ -158,12 +158,15 @@ function PremiumPage() {
 
   async function handleCancel() {
     if (!STRIPE_LINKS.cancel) {
+      setCanceling(true);
       try {
         await cancelPro({});
         await refreshSubscription();
         toast("Your Pro plan has been canceled.");
       } catch {
         toast.error("Couldn't cancel the plan. Please try again.");
+      } finally {
+        setCanceling(false);
       }
       return;
     }
@@ -172,6 +175,7 @@ function PremiumPage() {
     window.location.href = STRIPE_LINKS.cancel;
 
   }
+
 
 
   return (
