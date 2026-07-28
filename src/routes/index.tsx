@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { Bell, Plus } from "lucide-react";
+import { Bell } from "lucide-react";
 import { CharacterPost } from "@/components/CharacterPost";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
