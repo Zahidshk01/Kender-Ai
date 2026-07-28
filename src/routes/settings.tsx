@@ -1,8 +1,9 @@
 import { useState } from "react";
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import {
-  ChevronLeft, ChevronRight, Mail, FileText, ShieldCheck, Info, LogOut, Trash2, BadgeCheck, ShieldOff,
+  ChevronLeft, ChevronRight, Mail, FileText, ShieldCheck, Info, LogOut, Trash2, BadgeCheck, ShieldOff, Crown,
 } from "lucide-react";
+import { useSubscription } from "@/lib/subscription";
 import { supabase } from "@/integrations/supabase/client";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription,
