@@ -11,6 +11,7 @@ import { refreshFollows, toggleFollow, useIsFollowing } from "@/lib/follow-store
 import { characters as localCharacters } from "@/lib/mock-data";
 import { useChatCount, baseChatCount } from "@/lib/chat-counts";
 import { avatarForHandle, bioForHandle } from "@/lib/creator-meta";
+import { PremiumBadge } from "@/components/PremiumBadge";
 import { baselineFollowCounts } from "@/lib/follow-baseline";
 import { blockTarget, reportTarget, useBlockedTargets } from "@/lib/block-store";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -40,7 +41,7 @@ function UserProfilePage() {
   const { userId } = Route.useParams();
   const navigate = useNavigate();
   const [me, setMe] = useState<string | null>(null);
-  const [profile, setProfile] = useState<{ username: string | null; avatar_url: string | null; bio: string | null } | null>(null);
+  const [profile, setProfile] = useState<{ username: string | null; avatar_url: string | null; bio: string | null; is_pro?: boolean; pro_until?: string | null } | null>(null);
   const [chars, setChars] = useState<CharRow[]>([]);
   const [totalChats, setTotalChats] = useState(0);
   const [counts, setCounts] = useState({ followers: 0, following: 0 });
@@ -72,7 +73,7 @@ function UserProfilePage() {
       }
 
       const [{ data: prof }, { data: charData }, cnts, isF] = await Promise.all([
-        (supabase as any).from("profiles").select("username, avatar_url, bio").eq("id", userId).maybeSingle(),
+        (supabase as any).from("profiles").select("username, avatar_url, bio, is_pro, pro_until").eq("id", userId).maybeSingle(),
         (supabase as any)
           .from("characters")
           .select("id, name, image, chats")
@@ -142,6 +143,9 @@ function UserProfilePage() {
 
   const displayName = profile?.username || (isHandle ? handle! : "user");
   const initial = displayName.charAt(0).toUpperCase();
+  const isProProfile =
+    Boolean(profile?.is_pro) &&
+    (!profile?.pro_until || new Date(profile.pro_until).getTime() > Date.now());
 
   const isSelf = me === userId;
   const targetKey = isHandle ? `h:${handle}` : userId;
@@ -186,7 +190,10 @@ function UserProfilePage() {
           <button onClick={() => navigate({ to: "/" })} className="active:scale-95" aria-label="Back">
             <ArrowLeft className="h-6 w-6" />
           </button>
-          <h1 className="text-lg font-semibold">{displayName}</h1>
+          <h1 className="flex items-center gap-1.5 text-lg font-semibold">
+            {displayName}
+            {isProProfile && <PremiumBadge className="h-4.5 w-4.5" />}
+          </h1>
         </div>
         {!isSelf ? (
           <Popover>

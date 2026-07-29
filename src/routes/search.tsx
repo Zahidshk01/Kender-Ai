@@ -5,6 +5,15 @@ import { supabase } from "@/integrations/supabase/client";
 import type { Character } from "@/lib/character";
 import { resolveImage } from "@/lib/character-images";
 import { useBlockedTargets } from "@/lib/block-store";
+import { PremiumBadge } from "@/components/PremiumBadge";
+
+type UserRow = {
+  id: string;
+  username: string | null;
+  avatar_url: string | null;
+  is_pro: boolean | null;
+  pro_until: string | null;
+};
 
 export const Route = createFileRoute("/search")({
   head: () => ({
@@ -19,7 +28,29 @@ export const Route = createFileRoute("/search")({
 function SearchPage() {
   const [q, setQ] = useState("");
   const [items, setItems] = useState<Character[]>([]);
+  const [users, setUsers] = useState<UserRow[]>([]);
   const blocked = useBlockedTargets();
+
+  useEffect(() => {
+    const term = q.trim().replace(/^@/, "");
+    if (!term) {
+      setUsers([]);
+      return;
+    }
+    let cancelled = false;
+    const t = setTimeout(async () => {
+      const { data } = await (supabase as any)
+        .from("profiles")
+        .select("id, username, avatar_url, is_pro, pro_until")
+        .ilike("username", `%${term}%`)
+        .limit(20);
+      if (!cancelled) setUsers((data as UserRow[]) ?? []);
+    }, 250);
+    return () => {
+      cancelled = true;
+      clearTimeout(t);
+    };
+  }, [q]);
 
   useEffect(() => {
     (async () => {
@@ -48,6 +79,8 @@ function SearchPage() {
     );
   });
 
+  const userResults = users.filter((u) => !blocked.includes(u.id));
+
   return (
     <div className="safe-top pb-8">
       <header className="sticky top-0 z-30 border-b border-border/60 bg-background/80 px-4 pt-3 pb-3 backdrop-blur-xl">
@@ -69,6 +102,42 @@ function SearchPage() {
           )}
         </label>
       </header>
+
+      {userResults.length > 0 && (
+        <section className="px-4 pt-4">
+          <h2 className="mb-2 text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+            People
+          </h2>
+          <div className="overflow-hidden rounded-2xl bg-surface">
+            {userResults.map((u) => {
+              const name = (u.username ?? "user").replace(/^@/, "");
+              const pro =
+                Boolean(u.is_pro) &&
+                (!u.pro_until || new Date(u.pro_until).getTime() > Date.now());
+              return (
+                <Link
+                  key={u.id}
+                  to="/u/$userId"
+                  params={{ userId: u.id }}
+                  className="flex items-center gap-3 border-b border-border/60 px-4 py-3 last:border-b-0 active:opacity-70"
+                >
+                  {u.avatar_url ? (
+                    <img src={u.avatar_url} alt={name} className="h-10 w-10 rounded-full object-cover" />
+                  ) : (
+                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-background text-sm font-bold">
+                      {name.charAt(0).toUpperCase()}
+                    </div>
+                  )}
+                  <span className="flex min-w-0 items-center gap-1">
+                    <span className="truncate text-sm font-semibold">@{name}</span>
+                    {pro && <PremiumBadge />}
+                  </span>
+                </Link>
+              );
+            })}
+          </div>
+        </section>
+      )}
 
       {results.length ? (
         <div className="grid grid-cols-2 gap-3 px-4 pt-4">
@@ -101,7 +170,9 @@ function SearchPage() {
           ))}
         </div>
       ) : (
-        <p className="px-4 py-12 text-center text-sm text-muted-foreground">No results for "{q}"</p>
+        userResults.length === 0 && (
+          <p className="px-4 py-12 text-center text-sm text-muted-foreground">No results for "{q}"</p>
+        )
       )}
     </div>
   );

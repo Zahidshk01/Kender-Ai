@@ -12,6 +12,8 @@ import { useSavedIds } from "@/lib/saved-store";
 import { useLikedIds } from "@/lib/liked-store";
 import { useFollowing, useFollowers, toggleFollow } from "@/lib/follow-store";
 import { useProfile, updateProfile } from "@/lib/profile-store";
+import { useIsPro } from "@/lib/subscription";
+import { PremiumBadge } from "@/components/PremiumBadge";
 import { supabase } from "@/integrations/supabase/client";
 import { getUserFollowCounts } from "@/lib/user-follow";
 import { useChatCount, useLikeCount, useSaveCount, baseChatCount } from "@/lib/chat-counts";
@@ -75,6 +77,7 @@ function ProfilePage() {
   const [myChars, setMyChars] = useState<Character[]>([]);
   const [uid, setUid] = useState<string | null>(null);
   const [liveCounts, setLiveCounts] = useState({ followers: 0, following: 0 });
+  const isProUser = useIsPro();
 
 
   useEffect(() => {
@@ -163,7 +166,10 @@ function ProfilePage() {
           )}
         </div>
 
-        <h1 className="mt-3 text-lg font-semibold">{profile.username}</h1>
+        <h1 className="mt-3 flex items-center justify-center gap-1.5 text-lg font-semibold">
+          {profile.username}
+          {isProUser && <PremiumBadge className="h-4.5 w-4.5" />}
+        </h1>
 
         {/* Stats */}
         <div className="mt-4 grid w-full max-w-xs grid-cols-3">
