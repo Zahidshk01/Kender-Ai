@@ -47,7 +47,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // Ignore transient null sessions (refresh in-flight / network hiccup):
       // never drop an existing session unless Supabase explicitly signs out.
       if (!s) {
-        setLoading(false);
+        if (!hasStoredSession()) setLoading(false);
         return;
       }
       signedOutRef.current = false;
