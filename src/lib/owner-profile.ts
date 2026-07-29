@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
-export type OwnerProfile = { username: string | null; avatar_url: string | null };
+export type OwnerProfile = { username: string | null; avatar_url: string | null; is_pro: boolean };
 
 const cache = new Map<string, OwnerProfile>();
 const inflight = new Map<string, Promise<OwnerProfile>>();
@@ -17,12 +17,13 @@ async function fetchProfile(id: string): Promise<OwnerProfile> {
   const p = (async () => {
     const { data } = await (supabase as any)
       .from("profiles")
-      .select("username, avatar_url")
+      .select("username, avatar_url, is_pro, pro_until")
       .eq("id", id)
       .maybeSingle();
     const val: OwnerProfile = {
       username: data?.username ?? null,
       avatar_url: data?.avatar_url ?? null,
+      is_pro: Boolean(data?.is_pro) && (!data?.pro_until || new Date(data.pro_until).getTime() > Date.now()),
     };
     cache.set(id, val);
     inflight.delete(id);

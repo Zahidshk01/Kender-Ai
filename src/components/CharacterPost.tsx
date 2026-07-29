@@ -9,6 +9,7 @@ import { toggleFollow, useIsFollowing } from "@/lib/follow-store";
 import { useOwnerProfile } from "@/lib/owner-profile";
 import { avatarForHandle } from "@/lib/creator-meta";
 import { useChatCount, baseLikeCount } from "@/lib/chat-counts";
+import { PremiumBadge } from "@/components/PremiumBadge";
 
 
 function fmt(n: number) {
@@ -70,7 +71,10 @@ export function CharacterPost({ char }: { char: Character }) {
               {creatorInitial}
             </div>
           )}
-          <span className="truncate text-sm font-semibold">{displayLabel}</span>
+          <span className="flex min-w-0 items-center gap-1">
+            <span className="truncate text-sm font-semibold">{displayLabel}</span>
+            {ownerProfile?.is_pro && <PremiumBadge />}
+          </span>
         </Link>
 
 
