@@ -77,6 +77,7 @@ function ProfilePage() {
   const [myChars, setMyChars] = useState<Character[]>([]);
   const [uid, setUid] = useState<string | null>(null);
   const [liveCounts, setLiveCounts] = useState({ followers: 0, following: 0 });
+  const isProUser = useIsPro();
 
 
   useEffect(() => {
