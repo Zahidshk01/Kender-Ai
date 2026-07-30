@@ -258,25 +258,16 @@ function ProfilePage() {
 
       {/* Get Premium banner */}
       <div className="mx-4 mt-8 overflow-hidden rounded-2xl bg-surface">
-        {isProUser ? (
-          <div className="flex w-full items-center gap-3 px-4 py-3.5">
-            <PremiumBadge className="h-5 w-5" />
-            <span className="bg-gradient-to-r from-amber-300 via-amber-400 to-amber-600 bg-clip-text text-sm font-extrabold uppercase tracking-widest text-transparent">
-              KENDER PREMIUM
-            </span>
-          </div>
-        ) : (
-          <button
-            onClick={() => navigate({ to: "/premium" })}
-            className="flex w-full items-center gap-3 px-4 py-3.5 text-left active:bg-surface-2"
-          >
-            <BadgeCheck className="h-5 w-5 text-amber-400" />
-            <span className="flex-1 text-sm font-medium">Upgrade to Pro</span>
-            <span className="rounded-full bg-gradient-to-r from-amber-400 to-amber-600 px-3 py-1 text-xs font-bold text-black">
-              Get Premium
-            </span>
-          </button>
-        )}
+        <button
+          onClick={() => navigate({ to: "/premium" })}
+          className="flex w-full items-center gap-3 px-4 py-3.5 text-left active:bg-surface-2"
+        >
+          <BadgeCheck className="h-5 w-5 text-amber-400" />
+          <span className="flex-1 text-sm font-medium">Upgrade to Pro</span>
+          <span className="rounded-full bg-gradient-to-r from-amber-400 to-amber-600 px-3 py-1 text-xs font-bold text-black">
+            Get Premium
+          </span>
+        </button>
       </div>
 
       {/* Edit profile dialog */}
