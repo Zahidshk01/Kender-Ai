@@ -1,5 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 import { baselineFollowCounts } from "@/lib/follow-baseline";
+import { isNewAccount } from "@/lib/new-user";
 
 export async function isFollowingUser(targetId: string): Promise<boolean> {
   const { data: s } = await supabase.auth.getSession();
@@ -73,7 +74,15 @@ export async function getUserFollowCounts(userId: string) {
       .select("*", { count: "exact", head: true })
       .eq("user_id", userId),
   ]);
-  const base = baselineFollowCounts(userId);
+  const { data: prof } = await (supabase as any)
+    .from("profiles")
+    .select("created_at")
+    .eq("id", userId)
+    .maybeSingle();
+  // Brand-new accounts start completely empty — no synthetic baseline.
+  const base = isNewAccount(prof?.created_at)
+    ? { followers: 0, following: 0 }
+    : baselineFollowCounts(userId);
   return {
     followers: (followers ?? 0) + base.followers,
     following: (following ?? 0) + base.following,
