@@ -271,13 +271,25 @@ function PremiumPage() {
       )}
 
 
-      {isPro && (
-
-        <div className="relative z-10 mx-4 mt-4 rounded-3xl border border-amber-400/30 bg-amber-400/10 px-4 py-4 text-center">
-          <p className="bg-gradient-to-r from-amber-300 via-amber-400 to-amber-600 bg-clip-text text-lg font-extrabold tracking-tight text-transparent">
+      {showCongrats && isPro && (
+        <div className="relative z-10 mx-4 mt-4 animate-in fade-in slide-in-from-top-2 rounded-3xl border border-amber-400/30 bg-amber-400/10 px-4 py-3 text-center">
+          <p className="bg-gradient-to-r from-amber-300 via-amber-400 to-amber-600 bg-clip-text text-base font-extrabold tracking-tight text-transparent">
             Congratulations for KENDER PRO
           </p>
-          <p className="mt-1 text-xs text-muted-foreground">
+        </div>
+      )}
+
+      {isPro && (
+        <div className="relative z-10 mx-4 mt-4 overflow-hidden rounded-3xl border border-amber-400/25 bg-gradient-to-b from-amber-400/[0.12] to-transparent px-5 py-6 text-center">
+          <div className="pointer-events-none absolute -top-16 left-1/2 h-32 w-32 -translate-x-1/2 rounded-full bg-amber-400/20 blur-3xl" />
+          <div className="relative flex items-center justify-center gap-2">
+            <span className="bg-gradient-to-r from-amber-200 via-amber-400 to-amber-600 bg-clip-text text-xl font-extrabold tracking-[0.12em] text-transparent">
+              KENDER PREMIUM
+            </span>
+            <PremiumBadge className="h-5 w-5" />
+          </div>
+          <div className="relative mx-auto mt-4 h-px w-24 bg-gradient-to-r from-transparent via-amber-400/40 to-transparent" />
+          <p className="relative mt-4 text-sm font-medium text-foreground/90">
             {activePlan === "yearly" ? "Yearly plan" : "Monthly plan"} active
             {currentPeriodEnd
               ? cancelAtPeriodEnd
@@ -286,7 +298,7 @@ function PremiumPage() {
               : ""}
           </p>
           {cancelAtPeriodEnd && (
-            <p className="mt-1 text-[11px] text-muted-foreground">
+            <p className="relative mt-1.5 text-xs text-muted-foreground">
               You keep every Pro feature until then. Tap Restore to turn auto-renew back on.
             </p>
           )}
