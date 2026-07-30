@@ -54,6 +54,14 @@ function PremiumPage() {
   const cancelPro = useServerFn(cancelProDirect);
   const restorePro = useServerFn(restoreProDirect);
   const [canceling, setCanceling] = useState(false);
+  const [showCongrats, setShowCongrats] = useState(false);
+
+  // Congratulations banner is transient — it disappears after 3 seconds.
+  useEffect(() => {
+    if (!showCongrats) return;
+    const t = setTimeout(() => setShowCongrats(false), 3000);
+    return () => clearTimeout(t);
+  }, [showCongrats]);
 
   // Localised pricing — resolved after mount so SSR markup stays stable.
   const [country, setCountry] = useState<string>("US");
