@@ -309,13 +309,22 @@ function PremiumPage() {
       {/* Logo + title */}
       <div className="relative z-10 mt-4 flex flex-col items-center px-6 text-center">
         <img src={ghost} alt="Kender" className="h-14 w-14" />
-        <h1 className="mt-4 text-2xl font-bold tracking-tight text-foreground">
-          {isPro ? "Your Pro plan" : "Upgrade to Pro"}
-        </h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          {isPro ? "You have every premium feature unlocked." : "Unlock every premium feature."}
-        </p>
+        {isPro ? (
+          <p className="mt-4 text-sm text-muted-foreground">
+            You have every premium feature unlocked.
+          </p>
+        ) : (
+          <>
+            <h1 className="mt-4 text-2xl font-bold tracking-tight text-foreground">
+              Upgrade to Pro
+            </h1>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Unlock every premium feature.
+            </p>
+          </>
+        )}
       </div>
+
 
 
       {/* Plan cards */}
