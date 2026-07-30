@@ -8,6 +8,7 @@ import {
   getClientIp,
   json,
   requireAuth,
+  rejectIfBot,
   sanitizeForLlm,
   serverError,
 } from "@/lib/api-security";

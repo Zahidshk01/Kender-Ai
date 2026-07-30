@@ -5,6 +5,7 @@ import {
   enforceRateLimits,
   getClientIp,
   requireAuth,
+  rejectIfBot,
   sanitizeForLlm,
   uploadIpBucket,
 } from "@/lib/api-security";
