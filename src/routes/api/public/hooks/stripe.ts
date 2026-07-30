@@ -12,20 +12,39 @@ import { createHmac, timingSafeEqual } from "crypto";
  *  3. Save the signing secret as STRIPE_WEBHOOK_SECRET.
  */
 
-function verifySignature(payload: string, header: string, secret: string): boolean {
+/** Stripe signatures older than this are rejected (replay-attack window). */
+const TOLERANCE_SECONDS = 300;
+
+function verifySignature(
+  payload: string,
+  header: string,
+  secret: string
+): { ok: true } | { ok: false; reason: string } {
   const parts = Object.fromEntries(
     header.split(",").map((p) => p.split("=") as [string, string])
   );
   const timestamp = parts["t"];
   const signature = parts["v1"];
-  if (!timestamp || !signature) return false;
+  if (!timestamp || !signature) return { ok: false, reason: "malformed_header" };
+
+  // Reject replays of an old (but genuinely signed) payload.
+  const age = Math.abs(Math.floor(Date.now() / 1000) - Number(timestamp));
+  if (!Number.isFinite(age) || age > TOLERANCE_SECONDS) {
+    return { ok: false, reason: "stale_timestamp" };
+  }
+
   const expected = createHmac("sha256", secret)
     .update(`${timestamp}.${payload}`)
     .digest("hex");
   const a = Buffer.from(signature);
   const b = Buffer.from(expected);
-  return a.length === b.length && timingSafeEqual(a, b);
+  if (a.length !== b.length || !timingSafeEqual(a, b)) {
+    return { ok: false, reason: "bad_signature" };
+  }
+  return { ok: true };
 }
+
+const ROUTE = "api/public/hooks/stripe";
 
 export const Route = createFileRoute("/api/public/hooks/stripe")({
   server: {
@@ -35,11 +54,32 @@ export const Route = createFileRoute("/api/public/hooks/stripe")({
         if (!secret) {
           return new Response("Not configured", { status: 500 });
         }
+        // Cap webhook volume so a leaked URL can't be used to flood us.
+        const limited = await enforceRateLimits(
+          [{ key: `stripe:${getClientIp(request)}`, limit: 120, windowSeconds: 60 }],
+          60
+        );
+        if (limited) return limited;
+
         const sigHeader = request.headers.get("stripe-signature");
         const payload = await request.text();
-        if (!sigHeader || !verifySignature(payload, sigHeader, secret)) {
+        if (payload.length > 1_000_000) {
+          return new Response("Payload too large", { status: 413 });
+        }
+        const verdict = sigHeader
+          ? verifySignature(payload, sigHeader, secret)
+          : ({ ok: false, reason: "missing_header" } as const);
+        if (!verdict.ok) {
+          await logSecurityEvent({
+            event: "stripe_signature_rejected",
+            outcome: "blocked",
+            route: ROUTE,
+            request,
+            detail: { reason: verdict.reason },
+          });
           return new Response("Invalid signature", { status: 401 });
         }
+
 
         let event: any;
         try {
