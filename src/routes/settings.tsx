@@ -159,7 +159,7 @@ function SettingsPage() {
           icon={<Trash2 className="h-5 w-5 text-orange-400" />}
           label="Delete Account"
           labelClass="text-orange-400"
-          onClick={() => setConfirm("delete")}
+          onClick={() => { setConfirmText(""); setConfirm("delete1"); }}
           hideChevron
           isLast
         />
@@ -196,15 +196,77 @@ function SettingsPage() {
         </DialogContent>
       </Dialog>
 
-      <Dialog open={confirm === "delete"} onOpenChange={(o) => !o && setConfirm(null)}>
+      {/* Step 1 — what will be deleted */}
+      <Dialog open={confirm === "delete1"} onOpenChange={(o) => !o && setConfirm(null)}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Delete your account?</DialogTitle>
-            <DialogDescription>This clears your profile, saved and liked characters. This action can't be undone.</DialogDescription>
+            <DialogDescription>Please read what happens before you continue.</DialogDescription>
           </DialogHeader>
+          <ul className="space-y-2 text-sm text-foreground/90">
+            <li className="flex gap-2">
+              <span className="text-orange-400">•</span>
+              <span>
+                All characters you created{summary ? ` (${summary.characterCount})` : ""} will be permanently deleted
+                and removed from Home and Search for everyone.
+              </span>
+            </li>
+            <li className="flex gap-2">
+              <span className="text-orange-400">•</span>
+              <span>Your profile, chats, messages, likes, saves and followers will be erased.</span>
+            </li>
+            {(summary?.isPro ?? isPro) && (
+              <li className="flex gap-2">
+                <span className="text-amber-400">•</span>
+                <span>
+                  Your <span className="font-semibold text-amber-400">Kender Premium</span> subscription
+                  {summary?.plan ? ` (${summary.plan})` : ""} will be cancelled and deleted
+                  {summary?.currentPeriodEnd
+                    ? ` — you lose the time remaining until ${new Date(summary.currentPeriodEnd).toLocaleDateString()}`
+                    : ""}
+                  . No refunds are issued.
+                </span>
+              </li>
+            )}
+            <li className="flex gap-2">
+              <span className="text-orange-400">•</span>
+              <span>If you sign in again with the same email, Google or Apple account, you'll start a brand-new account with no history.</span>
+            </li>
+          </ul>
           <DialogFooter className="gap-2 sm:gap-2">
-            <button onClick={() => setConfirm(null)} className="flex-1 rounded-full bg-surface px-4 py-2.5 text-sm font-semibold">Cancel</button>
-            <button onClick={() => { setConfirm(null); handleDelete(); }} className="flex-1 rounded-full bg-red-600 px-4 py-2.5 text-sm font-semibold text-white">Delete</button>
+            <button onClick={() => setConfirm(null)} className="flex-1 rounded-full bg-surface px-4 py-2.5 text-sm font-semibold">Keep account</button>
+            <button onClick={() => { setConfirmText(""); setConfirm("delete2"); }} className="flex-1 rounded-full bg-orange-500 px-4 py-2.5 text-sm font-semibold text-white">Continue</button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Step 2 — final confirmation */}
+      <Dialog open={confirm === "delete2"} onOpenChange={(o) => !o && !deleting && setConfirm(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-red-500">
+              <AlertTriangle className="h-5 w-5" /> Are you absolutely sure?
+            </DialogTitle>
+            <DialogDescription>
+              This is permanent and can't be undone. Type <span className="font-semibold text-foreground">DELETE</span> to confirm.
+            </DialogDescription>
+          </DialogHeader>
+          <input
+            value={confirmText}
+            onChange={(e) => setConfirmText(e.target.value)}
+            placeholder="DELETE"
+            aria-label="Type DELETE to confirm"
+            className="w-full rounded-2xl bg-surface-2 px-4 py-3 text-sm outline-none ring-1 ring-border/50 focus:ring-red-500"
+          />
+          <DialogFooter className="gap-2 sm:gap-2">
+            <button disabled={deleting} onClick={() => setConfirm("delete1")} className="flex-1 rounded-full bg-surface px-4 py-2.5 text-sm font-semibold disabled:opacity-50">Back</button>
+            <button
+              disabled={deleting || confirmText.trim().toUpperCase() !== "DELETE"}
+              onClick={handleDelete}
+              className="flex-1 rounded-full bg-red-600 px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-50"
+            >
+              {deleting ? "Deleting…" : "Delete forever"}
+            </button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
