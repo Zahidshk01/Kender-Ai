@@ -1,21 +1,23 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-
-function periodEnd(plan: "monthly" | "yearly") {
-  const end = new Date();
-  if (plan === "yearly") end.setFullYear(end.getFullYear() + 1);
-  else end.setMonth(end.getMonth() + 1);
-  return end;
-}
+import { billingUserBucket, enforceRateLimits, logSecurityEvent } from "@/lib/api-security";
+import { isStillActive, periodEnd, planSchema } from "@/lib/subscription.server";
 
 /**
  * Temporary self-serve activation until the Stripe payment gateway is wired up.
  * Once STRIPE_LINKS are filled in, the UI stops calling these.
+ *
+ * Security: the subscription row is always keyed on the authenticated
+ * `context.userId` — a caller can never activate, cancel or restore another
+ * user's plan, even by tampering with the request body.
  */
 export const activateProDirect = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: { plan: "monthly" | "yearly" }) => input)
+  .inputValidator((input: unknown) => planSchema.parse(input))
   .handler(async ({ data, context }) => {
+    if (await enforceRateLimits([billingUserBucket("activate", context.userId)])) {
+      throw new Error("Too many requests. Please try again in a moment.");
+    }
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const end = periodEnd(data.plan);
 
@@ -28,6 +30,13 @@ export const activateProDirect = createServerFn({ method: "POST" })
       updated_at: new Date().toISOString(),
     });
     if (error) throw new Error(error.message);
+    await logSecurityEvent({
+      event: "subscription_activated",
+      outcome: "success",
+      route: "fn/activateProDirect",
+      userId: context.userId,
+      detail: { plan: data.plan },
+    });
     return { ok: true, currentPeriodEnd: end.toISOString() };
   });
 
@@ -38,6 +47,9 @@ export const activateProDirect = createServerFn({ method: "POST" })
 export const cancelProDirect = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
+    if (await enforceRateLimits([billingUserBucket("cancel", context.userId)])) {
+      throw new Error("Too many requests. Please try again in a moment.");
+    }
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: row } = await (supabaseAdmin as any)
       .from("subscriptions")
@@ -58,6 +70,12 @@ export const cancelProDirect = createServerFn({ method: "POST" })
       updated_at: new Date().toISOString(),
     });
     if (error) throw new Error(error.message);
+    await logSecurityEvent({
+      event: "subscription_autorenew_off",
+      outcome: "success",
+      route: "fn/cancelProDirect",
+      userId: context.userId,
+    });
     return { ok: true, activeUntil: stillInPeriod ? end : null };
   });
 
@@ -68,6 +86,9 @@ export const cancelProDirect = createServerFn({ method: "POST" })
 export const restoreProDirect = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
+    if (await enforceRateLimits([billingUserBucket("restore", context.userId)])) {
+      throw new Error("Too many requests. Please try again in a moment.");
+    }
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: row } = await (supabaseAdmin as any)
       .from("subscriptions")
@@ -77,17 +98,19 @@ export const restoreProDirect = createServerFn({ method: "POST" })
 
     if (!row?.plan) return { ok: false as const, reason: "none" as const };
 
-    const stillActive =
-      (row.status === "active" || row.status === "trialing") &&
-      (!row.current_period_end || new Date(row.current_period_end).getTime() > Date.now());
-
-    if (stillActive) {
+    if (isStillActive(row)) {
       if (row.cancel_at_period_end) {
         const { error } = await (supabaseAdmin as any)
           .from("subscriptions")
           .update({ cancel_at_period_end: false, updated_at: new Date().toISOString() })
           .eq("user_id", context.userId);
         if (error) throw new Error(error.message);
+        await logSecurityEvent({
+          event: "subscription_autorenew_on",
+          outcome: "success",
+          route: "fn/restoreProDirect",
+          userId: context.userId,
+        });
         return { ok: true as const, reason: "resumed" as const };
       }
       return { ok: true as const, reason: "active" as const };
@@ -104,5 +127,12 @@ export const restoreProDirect = createServerFn({ method: "POST" })
       updated_at: new Date().toISOString(),
     });
     if (error) throw new Error(error.message);
+    await logSecurityEvent({
+      event: "subscription_restored",
+      outcome: "success",
+      route: "fn/restoreProDirect",
+      userId: context.userId,
+      detail: { plan },
+    });
     return { ok: true as const, reason: "restored" as const };
   });
