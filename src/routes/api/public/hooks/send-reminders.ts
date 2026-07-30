@@ -1,6 +1,13 @@
 import { createFileRoute } from "@tanstack/react-router";
 import webpush from "web-push";
 import { createClient } from "@supabase/supabase-js";
+import {
+  enforceRateLimits,
+  logSecurityEvent,
+  requireCronSecret,
+  serverError,
+} from "@/lib/api-security";
+
 
 const NUDGES = [
   (n: string) => `${n} is thinking about you… come say hi 💭`,
