@@ -149,16 +149,16 @@ function SettingsPage() {
           hideChevron
         />
         <Row
-          icon={<LogOut className="h-5 w-5 text-orange-400" />}
+          icon={<LogOut className="h-5 w-5 text-red-500" />}
           label="Sign Out"
-          labelClass="text-orange-400"
+          labelClass="text-red-500"
           onClick={() => setConfirm("signout")}
           hideChevron
         />
         <Row
-          icon={<Trash2 className="h-5 w-5 text-orange-400" />}
+          icon={<Trash2 className="h-5 w-5 text-red-500" />}
           label="Delete Account"
-          labelClass="text-orange-400"
+          labelClass="text-red-500"
           onClick={() => { setConfirmText(""); setConfirm("delete1"); }}
           hideChevron
           isLast
