@@ -1,9 +1,11 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { isSeededCharacter } from "@/lib/new-user";
 
 // Deterministic base count derived from character id, so it never changes
 // between refreshes. Increments only when the user actually chats.
 export function baseChatCount(id: string): number {
+  if (!isSeededCharacter(id)) return 0;
   let h = 2166136261;
   for (let i = 0; i < id.length; i++) {
     h ^= id.charCodeAt(i);
@@ -25,9 +27,11 @@ function hashSalt(id: string, salt: string): number {
 
 // Deterministic engagement baselines, stable per character id.
 export function baseLikeCount(id: string): number {
+  if (!isSeededCharacter(id)) return 0;
   return 5000 + (hashSalt(id, "likes") % 40000);
 }
 export function baseSaveCount(id: string): number {
+  if (!isSeededCharacter(id)) return 0;
   return 200 + (hashSalt(id, "saves") % 3800);
 }
 
