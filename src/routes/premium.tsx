@@ -3,6 +3,7 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { ChevronLeft, Check, Minus, Sparkles, Loader2, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
 import ghost from "@/assets/kender-ghost.png";
+import { PremiumBadge } from "@/components/PremiumBadge";
 import {
   STRIPE_LINKS,
   pollForProAfterCheckout,
@@ -113,7 +114,7 @@ function PremiumPage() {
       if (cancelled) return;
       if (pro) {
         setPayError(null);
-        toast.success("Congratulations for KENDER PRO!");
+        setShowCongrats(true);
       } else {
         setPayError("timeout");
       }
@@ -170,7 +171,7 @@ function PremiumPage() {
       try {
         await activatePro({ data: { plan } });
         await refreshSubscription();
-        toast.success("Congratulations for KENDER PRO!");
+        setShowCongrats(true);
       } catch {
         toast.error("Couldn't activate Pro. Please try again.");
       } finally {
