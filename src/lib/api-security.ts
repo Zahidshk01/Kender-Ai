@@ -42,9 +42,15 @@ export function getClientIp(request: Request): string {
 
 export type AuthResult = { userId: string } | { errorResponse: Response };
 
-export async function requireAuth(request: Request): Promise<AuthResult> {
+export async function requireAuth(request: Request, route = "api"): Promise<AuthResult> {
   const authHeader = request.headers.get("authorization");
   if (!authHeader?.startsWith("Bearer ")) {
+    void logSecurityEvent({
+      event: "api_auth_missing",
+      outcome: "blocked",
+      route,
+      request,
+    });
     return { errorResponse: json({ error: "Unauthorized" }, 401) };
   }
   const token = authHeader.slice("Bearer ".length);
@@ -57,13 +63,21 @@ export async function requireAuth(request: Request): Promise<AuthResult> {
   const supabase = createClient(url, key, {
     auth: { persistSession: false, autoRefreshToken: false, storage: undefined },
   });
+  // getClaims() verifies the JWT signature and expiry against Supabase Auth.
   const { data, error } = await supabase.auth.getClaims(token);
   const userId = data?.claims?.sub;
   if (error || !userId) {
+    void logSecurityEvent({
+      event: "api_auth_invalid_token",
+      outcome: "failure",
+      route,
+      request,
+    });
     return { errorResponse: json({ error: "Unauthorized" }, 401) };
   }
   return { userId };
 }
+
 
 async function hit(key: string, limit: number, windowSeconds: number): Promise<boolean> {
   try {
