@@ -191,7 +191,7 @@ function SettingsPage() {
           </DialogHeader>
           <DialogFooter className="gap-2 sm:gap-2">
             <button onClick={() => setConfirm(null)} className="flex-1 rounded-full bg-surface px-4 py-2.5 text-sm font-semibold">Cancel</button>
-            <button onClick={() => { setConfirm(null); handleSignOut(); }} className="flex-1 rounded-full bg-orange-500 px-4 py-2.5 text-sm font-semibold text-white">Sign out</button>
+            <button onClick={() => { setConfirm(null); handleSignOut(); }} className="flex-1 rounded-full bg-red-600 px-4 py-2.5 text-sm font-semibold text-white">Sign out</button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -235,7 +235,7 @@ function SettingsPage() {
           </ul>
           <DialogFooter className="gap-2 sm:gap-2">
             <button onClick={() => setConfirm(null)} className="flex-1 rounded-full bg-surface px-4 py-2.5 text-sm font-semibold">Keep account</button>
-            <button onClick={() => { setConfirmText(""); setConfirm("delete2"); }} className="flex-1 rounded-full bg-orange-500 px-4 py-2.5 text-sm font-semibold text-white">Continue</button>
+            <button onClick={() => { setConfirmText(""); setConfirm("delete2"); }} className="flex-1 rounded-full bg-red-600 px-4 py-2.5 text-sm font-semibold text-white">Continue</button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
