@@ -149,16 +149,16 @@ function SettingsPage() {
           hideChevron
         />
         <Row
-          icon={<LogOut className="h-5 w-5 text-orange-400" />}
+          icon={<LogOut className="h-5 w-5 text-red-500" />}
           label="Sign Out"
-          labelClass="text-orange-400"
+          labelClass="text-red-500"
           onClick={() => setConfirm("signout")}
           hideChevron
         />
         <Row
-          icon={<Trash2 className="h-5 w-5 text-orange-400" />}
+          icon={<Trash2 className="h-5 w-5 text-red-500" />}
           label="Delete Account"
-          labelClass="text-orange-400"
+          labelClass="text-red-500"
           onClick={() => { setConfirmText(""); setConfirm("delete1"); }}
           hideChevron
           isLast
@@ -191,7 +191,7 @@ function SettingsPage() {
           </DialogHeader>
           <DialogFooter className="gap-2 sm:gap-2">
             <button onClick={() => setConfirm(null)} className="flex-1 rounded-full bg-surface px-4 py-2.5 text-sm font-semibold">Cancel</button>
-            <button onClick={() => { setConfirm(null); handleSignOut(); }} className="flex-1 rounded-full bg-orange-500 px-4 py-2.5 text-sm font-semibold text-white">Sign out</button>
+            <button onClick={() => { setConfirm(null); handleSignOut(); }} className="flex-1 rounded-full bg-red-600 px-4 py-2.5 text-sm font-semibold text-white">Sign out</button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -205,14 +205,14 @@ function SettingsPage() {
           </DialogHeader>
           <ul className="space-y-2 text-sm text-foreground/90">
             <li className="flex gap-2">
-              <span className="text-orange-400">•</span>
+              <span className="text-red-500">•</span>
               <span>
                 All characters you created{summary ? ` (${summary.characterCount})` : ""} will be permanently deleted
                 and removed from Home and Search for everyone.
               </span>
             </li>
             <li className="flex gap-2">
-              <span className="text-orange-400">•</span>
+              <span className="text-red-500">•</span>
               <span>Your profile, chats, messages, likes, saves and followers will be erased.</span>
             </li>
             {(summary?.isPro ?? isPro) && (
@@ -229,13 +229,13 @@ function SettingsPage() {
               </li>
             )}
             <li className="flex gap-2">
-              <span className="text-orange-400">•</span>
+              <span className="text-red-500">•</span>
               <span>If you sign in again with the same email, Google or Apple account, you'll start a brand-new account with no history.</span>
             </li>
           </ul>
           <DialogFooter className="gap-2 sm:gap-2">
             <button onClick={() => setConfirm(null)} className="flex-1 rounded-full bg-surface px-4 py-2.5 text-sm font-semibold">Keep account</button>
-            <button onClick={() => { setConfirmText(""); setConfirm("delete2"); }} className="flex-1 rounded-full bg-orange-500 px-4 py-2.5 text-sm font-semibold text-white">Continue</button>
+            <button onClick={() => { setConfirmText(""); setConfirm("delete2"); }} className="flex-1 rounded-full bg-red-600 px-4 py-2.5 text-sm font-semibold text-white">Continue</button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
