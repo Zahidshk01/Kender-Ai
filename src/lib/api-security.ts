@@ -16,6 +16,13 @@ export function json(body: unknown, status = 200, headers: Record<string, string
 
 export function badRequest(route: string, detail: string, meta?: Record<string, unknown>) {
   console.warn(`[${route}] invalid input`, { at: new Date().toISOString(), detail, ...meta });
+  void logSecurityEvent({
+    event: "api_invalid_input",
+    outcome: "failure",
+    route,
+    userId: (meta?.userId as string) ?? null,
+    detail: { reason: detail },
+  });
   return json({ error: "Invalid request" }, 400);
 }
 
@@ -27,8 +34,16 @@ export function serverError(route: string, error: unknown, meta?: Record<string,
     stack: error instanceof Error ? error.stack : undefined,
     ...meta,
   });
+  void logSecurityEvent({
+    event: "api_server_error",
+    outcome: "failure",
+    route,
+    userId: (meta?.userId as string) ?? null,
+    detail: { message: error instanceof Error ? error.message : String(error) },
+  });
   return json({ error: "Something went wrong" }, 500);
 }
+
 
 export function getClientIp(request: Request): string {
   const fwd = request.headers.get("x-forwarded-for");
