@@ -27,6 +27,7 @@ import { Route as ApiGenerateNameRouteImport } from './routes/api/generate-name'
 import { Route as ApiGenerateFirstMessageRouteImport } from './routes/api/generate-first-message'
 import { Route as ApiGenerateCharacterImageRouteImport } from './routes/api/generate-character-image'
 import { Route as ApiChatRouteImport } from './routes/api/chat'
+import { Route as ApiAuthEventRouteImport } from './routes/api/auth-event'
 import { Route as ApiPublicHooksStripeRouteImport } from './routes/api/public/hooks/stripe'
 import { Route as ApiPublicHooksSendRemindersRouteImport } from './routes/api/public/hooks/send-reminders'
 
@@ -121,6 +122,11 @@ const ApiChatRoute = ApiChatRouteImport.update({
   path: '/api/chat',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiAuthEventRoute = ApiAuthEventRouteImport.update({
+  id: '/api/auth-event',
+  path: '/api/auth-event',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPublicHooksStripeRoute = ApiPublicHooksStripeRouteImport.update({
   id: '/api/public/hooks/stripe',
   path: '/api/public/hooks/stripe',
@@ -145,6 +151,7 @@ export interface FileRoutesByFullPath {
   '/search': typeof SearchRoute
   '/settings': typeof SettingsRoute
   '/terms-of-service': typeof TermsOfServiceRoute
+  '/api/auth-event': typeof ApiAuthEventRoute
   '/api/chat': typeof ApiChatRoute
   '/api/generate-character-image': typeof ApiGenerateCharacterImageRoute
   '/api/generate-first-message': typeof ApiGenerateFirstMessageRoute
@@ -167,6 +174,7 @@ export interface FileRoutesByTo {
   '/search': typeof SearchRoute
   '/settings': typeof SettingsRoute
   '/terms-of-service': typeof TermsOfServiceRoute
+  '/api/auth-event': typeof ApiAuthEventRoute
   '/api/chat': typeof ApiChatRoute
   '/api/generate-character-image': typeof ApiGenerateCharacterImageRoute
   '/api/generate-first-message': typeof ApiGenerateFirstMessageRoute
@@ -190,6 +198,7 @@ export interface FileRoutesById {
   '/search': typeof SearchRoute
   '/settings': typeof SettingsRoute
   '/terms-of-service': typeof TermsOfServiceRoute
+  '/api/auth-event': typeof ApiAuthEventRoute
   '/api/chat': typeof ApiChatRoute
   '/api/generate-character-image': typeof ApiGenerateCharacterImageRoute
   '/api/generate-first-message': typeof ApiGenerateFirstMessageRoute
@@ -214,6 +223,7 @@ export interface FileRouteTypes {
     | '/search'
     | '/settings'
     | '/terms-of-service'
+    | '/api/auth-event'
     | '/api/chat'
     | '/api/generate-character-image'
     | '/api/generate-first-message'
@@ -236,6 +246,7 @@ export interface FileRouteTypes {
     | '/search'
     | '/settings'
     | '/terms-of-service'
+    | '/api/auth-event'
     | '/api/chat'
     | '/api/generate-character-image'
     | '/api/generate-first-message'
@@ -258,6 +269,7 @@ export interface FileRouteTypes {
     | '/search'
     | '/settings'
     | '/terms-of-service'
+    | '/api/auth-event'
     | '/api/chat'
     | '/api/generate-character-image'
     | '/api/generate-first-message'
@@ -281,6 +293,7 @@ export interface RootRouteChildren {
   SearchRoute: typeof SearchRoute
   SettingsRoute: typeof SettingsRoute
   TermsOfServiceRoute: typeof TermsOfServiceRoute
+  ApiAuthEventRoute: typeof ApiAuthEventRoute
   ApiChatRoute: typeof ApiChatRoute
   ApiGenerateCharacterImageRoute: typeof ApiGenerateCharacterImageRoute
   ApiGenerateFirstMessageRoute: typeof ApiGenerateFirstMessageRoute
@@ -420,6 +433,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiChatRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/auth-event': {
+      id: '/api/auth-event'
+      path: '/api/auth-event'
+      fullPath: '/api/auth-event'
+      preLoaderRoute: typeof ApiAuthEventRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/hooks/stripe': {
       id: '/api/public/hooks/stripe'
       path: '/api/public/hooks/stripe'
@@ -449,6 +469,7 @@ const rootRouteChildren: RootRouteChildren = {
   SearchRoute: SearchRoute,
   SettingsRoute: SettingsRoute,
   TermsOfServiceRoute: TermsOfServiceRoute,
+  ApiAuthEventRoute: ApiAuthEventRoute,
   ApiChatRoute: ApiChatRoute,
   ApiGenerateCharacterImageRoute: ApiGenerateCharacterImageRoute,
   ApiGenerateFirstMessageRoute: ApiGenerateFirstMessageRoute,

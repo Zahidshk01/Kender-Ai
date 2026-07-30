@@ -1,6 +1,13 @@
 import { createFileRoute } from "@tanstack/react-router";
 import webpush from "web-push";
 import { createClient } from "@supabase/supabase-js";
+import {
+  enforceRateLimits,
+  logSecurityEvent,
+  requireCronSecret,
+  serverError,
+} from "@/lib/api-security";
+
 
 const NUDGES = [
   (n: string) => `${n} is thinking about you… come say hi 💭`,
@@ -139,11 +146,39 @@ async function handle() {
   return { sent, removed };
 }
 
+const ROUTE = "api/public/hooks/send-reminders";
+
+/**
+ * Internal scheduled job. It runs with the service role and can push a
+ * notification to every user, so it is NOT open to the public internet:
+ * the caller must present the CRON_SECRET (header `x-cron-secret` or
+ * `Authorization: Bearer <CRON_SECRET>`), and is additionally rate limited.
+ */
+async function guarded(request: Request) {
+  const denied = await requireCronSecret(request, ROUTE);
+  if (denied) return denied;
+
+  const limited = await enforceRateLimits(
+    [{ key: `cron:${ROUTE}`, limit: 6, windowSeconds: 3600 }],
+    600
+  );
+  if (limited) return limited;
+
+  try {
+    const result = await handle();
+    await logSecurityEvent({ event: "cron_run", outcome: "success", route: ROUTE, request, detail: result as Record<string, unknown> });
+    return Response.json(result);
+  } catch (error) {
+    return serverError(ROUTE, error);
+  }
+}
+
 export const Route = createFileRoute("/api/public/hooks/send-reminders")({
   server: {
     handlers: {
-      POST: async () => Response.json(await handle()),
-      GET: async () => Response.json(await handle()),
+      POST: async ({ request }) => guarded(request),
+      GET: async ({ request }) => guarded(request),
     },
   },
 });
+

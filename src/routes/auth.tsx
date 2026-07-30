@@ -44,25 +44,52 @@ function AuthPage() {
     [],
   );
 
+  /** Audit trail + per-IP throttling for sign-in attempts. Never blocks on failure. */
+  const reportAuth = async (
+    event: "sign_in_attempt" | "sign_in_failed" | "sign_in_success",
+    provider: "google" | "apple",
+    reason?: string,
+  ): Promise<boolean> => {
+    try {
+      const res = await fetch("/api/auth-event", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ event, provider, reason }),
+      });
+      return res.status !== 429;
+    } catch {
+      return true;
+    }
+  };
+
   const handleOAuth = async (provider: "google" | "apple") => {
     if (!confirmed) {
       toast("Please confirm you are 18 or older");
       return;
     }
     setBusy(provider);
+    const allowed = await reportAuth("sign_in_attempt", provider);
+    if (!allowed) {
+      toast.error("Too many sign-in attempts. Please try again in a few minutes.");
+      setBusy(null);
+      return;
+    }
     const result = await lovable.auth.signInWithOAuth(provider, {
       redirect_uri: window.location.origin,
       extraParams: provider === "google" ? { prompt: "select_account" } : {},
     });
     if (result.error) {
+      void reportAuth("sign_in_failed", provider, result.error.message);
       toast.error(result.error.message ?? "Sign in failed");
       setBusy(null);
       return;
     }
     if (result.redirected) return; // browser is navigating away
     // Popup flow: tokens set, go home
+    void reportAuth("sign_in_success", provider);
     navigate({ to: "/", replace: true });
   };
+
 
   const disabled = !confirmed;
 

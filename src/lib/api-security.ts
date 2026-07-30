@@ -16,6 +16,13 @@ export function json(body: unknown, status = 200, headers: Record<string, string
 
 export function badRequest(route: string, detail: string, meta?: Record<string, unknown>) {
   console.warn(`[${route}] invalid input`, { at: new Date().toISOString(), detail, ...meta });
+  void logSecurityEvent({
+    event: "api_invalid_input",
+    outcome: "failure",
+    route,
+    userId: (meta?.userId as string) ?? null,
+    detail: { reason: detail },
+  });
   return json({ error: "Invalid request" }, 400);
 }
 
@@ -27,8 +34,16 @@ export function serverError(route: string, error: unknown, meta?: Record<string,
     stack: error instanceof Error ? error.stack : undefined,
     ...meta,
   });
+  void logSecurityEvent({
+    event: "api_server_error",
+    outcome: "failure",
+    route,
+    userId: (meta?.userId as string) ?? null,
+    detail: { message: error instanceof Error ? error.message : String(error) },
+  });
   return json({ error: "Something went wrong" }, 500);
 }
+
 
 export function getClientIp(request: Request): string {
   const fwd = request.headers.get("x-forwarded-for");
@@ -42,9 +57,15 @@ export function getClientIp(request: Request): string {
 
 export type AuthResult = { userId: string } | { errorResponse: Response };
 
-export async function requireAuth(request: Request): Promise<AuthResult> {
+export async function requireAuth(request: Request, route = "api"): Promise<AuthResult> {
   const authHeader = request.headers.get("authorization");
   if (!authHeader?.startsWith("Bearer ")) {
+    void logSecurityEvent({
+      event: "api_auth_missing",
+      outcome: "blocked",
+      route,
+      request,
+    });
     return { errorResponse: json({ error: "Unauthorized" }, 401) };
   }
   const token = authHeader.slice("Bearer ".length);
@@ -57,13 +78,21 @@ export async function requireAuth(request: Request): Promise<AuthResult> {
   const supabase = createClient(url, key, {
     auth: { persistSession: false, autoRefreshToken: false, storage: undefined },
   });
+  // getClaims() verifies the JWT signature and expiry against Supabase Auth.
   const { data, error } = await supabase.auth.getClaims(token);
   const userId = data?.claims?.sub;
   if (error || !userId) {
+    void logSecurityEvent({
+      event: "api_auth_invalid_token",
+      outcome: "failure",
+      route,
+      request,
+    });
     return { errorResponse: json({ error: "Unauthorized" }, 401) };
   }
   return { userId };
 }
+
 
 async function hit(key: string, limit: number, windowSeconds: number): Promise<boolean> {
   try {
@@ -125,6 +154,130 @@ export const uploadIpBucket = (route: string, ip: string): Bucket => ({
   limit: 5,
   windowSeconds: 60,
 });
+
+/** Sign-in / account-creation attempts: 10 / 15 min per IP. */
+export const authIpBucket = (ip: string): Bucket => ({
+  key: `auth:ip:${ip}`,
+  limit: 10,
+  windowSeconds: 900,
+});
+
+/** Billing / subscription mutations: 5 / 5 min per user. */
+export const billingUserBucket = (action: string, userId: string): Bucket => ({
+  key: `bill:${action}:${userId}`,
+  limit: 5,
+  windowSeconds: 300,
+});
+
+// ---------------------------------------------------------------------------
+// Audit logging
+// ---------------------------------------------------------------------------
+
+export type SecurityEvent = {
+  event: string;
+  outcome?: "info" | "success" | "failure" | "blocked";
+  userId?: string | null;
+  route?: string | null;
+  request?: Request | null;
+  detail?: Record<string, unknown>;
+};
+
+/**
+ * Append-only audit trail (auth attempts, API errors, abuse). Written with the
+ * service role because clients must never be able to forge or delete entries.
+ * Never throws — logging must not be able to break a request.
+ */
+export async function logSecurityEvent(e: SecurityEvent): Promise<void> {
+  const row = {
+    user_id: e.userId ?? null,
+    event: e.event.slice(0, 64),
+    outcome: e.outcome ?? "info",
+    route: e.route?.slice(0, 128) ?? null,
+    ip: e.request ? getClientIp(e.request).slice(0, 64) : null,
+    user_agent: e.request?.headers.get("user-agent")?.slice(0, 512) ?? null,
+    detail: e.detail ?? {},
+  };
+  console.info("[security]", { at: new Date().toISOString(), ...row });
+  try {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    await (supabaseAdmin as any).from("security_events").insert(row);
+  } catch (err) {
+    console.error("[security] failed to persist event", err);
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Machine-to-machine (cron / scheduler) authentication
+// ---------------------------------------------------------------------------
+
+/**
+ * Guards internal jobs exposed under /api/public/*. The caller must present
+ * CRON_SECRET, compared in constant time so the value can't be brute-forced
+ * by timing. Returns a Response to send back when the caller is not trusted.
+ */
+export async function requireCronSecret(
+  request: Request,
+  route: string
+): Promise<Response | null> {
+  const expected = process.env.CRON_SECRET;
+  if (!expected) {
+    console.error(`[${route}] CRON_SECRET is not configured`);
+    return json({ error: "Not configured" }, 503);
+  }
+  const header =
+    request.headers.get("x-cron-secret") ??
+    (request.headers.get("authorization")?.startsWith("Bearer ")
+      ? request.headers.get("authorization")!.slice("Bearer ".length)
+      : "");
+
+  const a = new TextEncoder().encode(header);
+  const b = new TextEncoder().encode(expected);
+  let diff = a.length ^ b.length;
+  for (let i = 0; i < Math.max(a.length, b.length); i++) {
+    diff |= (a[i] ?? 0) ^ (b[i] ?? 0);
+  }
+  if (diff !== 0) {
+    await logSecurityEvent({
+      event: "cron_auth_failed",
+      outcome: "blocked",
+      route,
+      request,
+    });
+    return json({ error: "Unauthorized" }, 401);
+  }
+  return null;
+}
+
+// ---------------------------------------------------------------------------
+// Basic bot / scraper heuristics
+// ---------------------------------------------------------------------------
+
+const BOT_UA =
+  /(curl|wget|python-requests|httpie|scrapy|libwww|go-http-client|okhttp|java\/|bot\b|spider|crawler|headlesschrome|phantomjs|puppeteer)/i;
+
+/**
+ * Rejects obvious automated clients on user-facing endpoints. Deliberately
+ * conservative: a missing/short UA or a known scripting agent is blocked, real
+ * browsers are untouched. Rate limiting remains the primary defence.
+ */
+export async function rejectIfBot(
+  request: Request,
+  route: string,
+  userId?: string
+): Promise<Response | null> {
+  const ua = request.headers.get("user-agent") ?? "";
+  if (ua.length >= 15 && !BOT_UA.test(ua)) return null;
+  await logSecurityEvent({
+    event: "bot_blocked",
+    outcome: "blocked",
+    route,
+    request,
+    userId,
+    detail: { ua: ua.slice(0, 200) },
+  });
+  return json({ error: "Automated access is not allowed." }, 403);
+}
+
 
 /**
  * Strip common prompt-injection vectors and control characters from

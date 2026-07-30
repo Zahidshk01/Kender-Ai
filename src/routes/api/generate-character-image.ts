@@ -5,6 +5,7 @@ import {
   enforceRateLimits,
   getClientIp,
   requireAuth,
+  rejectIfBot,
   sanitizeForLlm,
   uploadIpBucket,
 } from "@/lib/api-security";
@@ -50,7 +51,10 @@ export const Route = createFileRoute("/api/generate-character-image")({
   server: {
     handlers: {
       POST: async ({ request }) => {
-        const auth = await requireAuth(request);
+        const botBlocked = await rejectIfBot(request, ROUTE);
+        if (botBlocked) return botBlocked;
+
+        const auth = await requireAuth(request, ROUTE);
         if ("errorResponse" in auth) return auth.errorResponse;
 
         const ip = getClientIp(request);
