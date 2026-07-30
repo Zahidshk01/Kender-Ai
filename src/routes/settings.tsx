@@ -1,10 +1,12 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
+import { useServerFn } from "@tanstack/react-start";
 import {
-  ChevronLeft, ChevronRight, Mail, FileText, ShieldCheck, Info, LogOut, Trash2, BadgeCheck, ShieldOff, Crown,
+  ChevronLeft, ChevronRight, Mail, FileText, ShieldCheck, Info, LogOut, Trash2, BadgeCheck, ShieldOff, Crown, AlertTriangle,
 } from "lucide-react";
 import { useSubscription } from "@/lib/subscription";
 import { supabase } from "@/integrations/supabase/client";
+import { deleteMyAccount, getDeletionSummary } from "@/lib/account.functions";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription,
 } from "@/components/ui/dialog";
@@ -28,7 +30,20 @@ function SettingsPage() {
   const navigate = useNavigate();
   const [infoDialog, setInfoDialog] = useState<null | "contact" | "terms" | "version" | "blocked">(null);
   const { isPro } = useSubscription();
-  const [confirm, setConfirm] = useState<null | "signout" | "delete">(null);
+  const [confirm, setConfirm] = useState<null | "signout" | "delete1" | "delete2">(null);
+  const [summary, setSummary] = useState<{ characterCount: number; isPro: boolean; plan: string | null; currentPeriodEnd: string | null } | null>(null);
+  const [deleting, setDeleting] = useState(false);
+  const [confirmText, setConfirmText] = useState("");
+  const fetchSummary = useServerFn(getDeletionSummary);
+  const runDelete = useServerFn(deleteMyAccount);
+
+  useEffect(() => {
+    if (confirm !== "delete1") return;
+    setSummary(null);
+    fetchSummary({} as never)
+      .then((s: any) => setSummary(s))
+      .catch(() => setSummary(null));
+  }, [confirm, fetchSummary]);
 
   async function handleSignOut() {
     try { await supabase.auth.signOut(); } catch {}
@@ -37,13 +52,25 @@ function SettingsPage() {
   }
 
   async function handleDelete() {
-    try { await supabase.auth.signOut(); } catch {}
-    localStorage.removeItem("kender.profile");
-    localStorage.removeItem("kender.saved");
-    localStorage.removeItem("kender.liked");
-    toast("Account deleted");
-    navigate({ to: "/" });
+    setDeleting(true);
+    try {
+      await runDelete({} as never);
+      try { await supabase.auth.signOut(); } catch {}
+      try {
+        localStorage.removeItem("kender.profile");
+        localStorage.removeItem("kender.saved");
+        localStorage.removeItem("kender.liked");
+      } catch {}
+      setConfirm(null);
+      toast("Your account has been permanently deleted");
+      navigate({ to: "/" });
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Could not delete account");
+    } finally {
+      setDeleting(false);
+    }
   }
+
 
   return (
     <div className="safe-top min-h-screen bg-background pb-16">
