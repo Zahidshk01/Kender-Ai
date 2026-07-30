@@ -113,6 +113,48 @@ export type Database = {
         }
         Relationships: []
       }
+      deleted_accounts: {
+        Row: {
+          characters: Json | null
+          created_at: string
+          deleted_at: string
+          email: string | null
+          id: string
+          profile: Json | null
+          stats: Json | null
+          subscription: Json | null
+          updated_at: string
+          user_id: string
+          username: string | null
+        }
+        Insert: {
+          characters?: Json | null
+          created_at?: string
+          deleted_at?: string
+          email?: string | null
+          id?: string
+          profile?: Json | null
+          stats?: Json | null
+          subscription?: Json | null
+          updated_at?: string
+          user_id: string
+          username?: string | null
+        }
+        Update: {
+          characters?: Json | null
+          created_at?: string
+          deleted_at?: string
+          email?: string | null
+          id?: string
+          profile?: Json | null
+          stats?: Json | null
+          subscription?: Json | null
+          updated_at?: string
+          user_id?: string
+          username?: string | null
+        }
+        Relationships: []
+      }
       direct_messages: {
         Row: {
           content: string
