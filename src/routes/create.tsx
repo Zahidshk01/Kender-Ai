@@ -167,12 +167,22 @@ function CreatePage() {
     if (!firstMessage.trim()) return toast("Add a first message");
     const { data: sess } = await supabase.auth.getSession();
     const owner_id = sess.session?.user.id ?? null;
+    if (!owner_id) return toast("Please sign in first");
+    // Never derive the public creator handle from the email address — that
+    // would publish part of every creator's email on the feed.
+    const { data: prof } = await (supabase as any)
+      .from("profiles")
+      .select("username")
+      .eq("id", owner_id)
+      .maybeSingle();
+    const handle = prof?.username ? `@${String(prof.username).replace(/^@/, "")}` : "@you";
     const id = crypto.randomUUID();
     const { error } = await (supabase as any).from("characters").insert({
       id,
       name: name.trim(),
       image,
-      creator: sess.session?.user.email ? `@${sess.session.user.email.split("@")[0]}` : "@you",
+      creator: handle,
+
       chats: "0",
       category: "Friends",
       height: 80,
