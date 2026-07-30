@@ -205,14 +205,14 @@ function SettingsPage() {
           </DialogHeader>
           <ul className="space-y-2 text-sm text-foreground/90">
             <li className="flex gap-2">
-              <span className="text-orange-400">•</span>
+              <span className="text-red-500">•</span>
               <span>
                 All characters you created{summary ? ` (${summary.characterCount})` : ""} will be permanently deleted
                 and removed from Home and Search for everyone.
               </span>
             </li>
             <li className="flex gap-2">
-              <span className="text-orange-400">•</span>
+              <span className="text-red-500">•</span>
               <span>Your profile, chats, messages, likes, saves and followers will be erased.</span>
             </li>
             {(summary?.isPro ?? isPro) && (
@@ -229,7 +229,7 @@ function SettingsPage() {
               </li>
             )}
             <li className="flex gap-2">
-              <span className="text-orange-400">•</span>
+              <span className="text-red-500">•</span>
               <span>If you sign in again with the same email, Google or Apple account, you'll start a brand-new account with no history.</span>
             </li>
           </ul>
