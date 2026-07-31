@@ -124,6 +124,10 @@ function ProfilePage() {
     return () => { cancelled = true; };
   }, [uid, following.length, refetchTick]);
 
+  const ownerChatTotal = useOwnerChatTotal(uid, myChars.map((c) => c.id));
+
+
+
 
   const [tab, setTab] = useState<TabKey>("characters");
   const [editOpen, setEditOpen] = useState(false);
