@@ -491,6 +491,7 @@ export type Database = {
         Args: { _user_id: string; _username: string }
         Returns: boolean
       }
+      owner_character_chat_total: { Args: { _owner: string }; Returns: number }
     }
     Enums: {
       [_ in never]: never

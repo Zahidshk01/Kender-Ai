@@ -16,7 +16,7 @@ import { useIsPro } from "@/lib/subscription";
 import { PremiumBadge } from "@/components/PremiumBadge";
 import { supabase } from "@/integrations/supabase/client";
 import { getUserFollowCounts } from "@/lib/user-follow";
-import { useChatCount, useLikeCount, useSaveCount, baseChatCount } from "@/lib/chat-counts";
+import { useChatCount, useLikeCount, useSaveCount, baseChatCount, useOwnerChatTotal } from "@/lib/chat-counts";
 
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription,
@@ -124,6 +124,10 @@ function ProfilePage() {
     return () => { cancelled = true; };
   }, [uid, following.length, refetchTick]);
 
+  const ownerChatTotal = useOwnerChatTotal(uid, myChars.map((c) => c.id));
+
+
+
 
   const [tab, setTab] = useState<TabKey>("characters");
   const [editOpen, setEditOpen] = useState(false);
@@ -183,7 +187,7 @@ function ProfilePage() {
               <>
                 <Stat value={fmt(liveCounts.followers)} label="Followers" onClick={() => setListDialog("followers")} />
                 <Stat value={fmt(liveCounts.following)} label="Following" onClick={() => setListDialog("following")} />
-                <Stat value={fmt(myChars.reduce((acc, c) => acc + baseChatCount(c.id), 0))} label="Chats" />
+                <Stat value={fmt(ownerChatTotal)} label="Chats" />
 
               </>
             );

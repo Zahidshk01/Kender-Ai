@@ -109,3 +109,27 @@ export function useChatCount(charId: string): number {
 
   return baseChatCount(charId) + own;
 }
+
+// Total conversations (across all users) with the characters owned by `ownerId`,
+// plus the deterministic baselines of any seeded characters they own.
+export function useOwnerChatTotal(ownerId: string | null, ownedIds: string[]): number {
+  const [live, setLive] = useState(0);
+  useEffect(() => {
+    if (!ownerId) {
+      setLive(0);
+      return;
+    }
+    let cancelled = false;
+    (supabase as any)
+      .rpc("owner_character_chat_total", { _owner: ownerId })
+      .then(({ data }: any) => {
+        if (!cancelled) setLive(Number(data ?? 0));
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [ownerId, ownedIds.length]);
+
+  const base = ownedIds.reduce((acc, id) => acc + baseChatCount(id), 0);
+  return base + live;
+}
