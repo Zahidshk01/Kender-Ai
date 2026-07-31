@@ -16,7 +16,7 @@ import { useIsPro } from "@/lib/subscription";
 import { PremiumBadge } from "@/components/PremiumBadge";
 import { supabase } from "@/integrations/supabase/client";
 import { getUserFollowCounts } from "@/lib/user-follow";
-import { useChatCount, useLikeCount, useSaveCount, baseChatCount, useOwnerChatTotal } from "@/lib/chat-counts";
+import { useChatCount, useLikeCount, useSaveCount, baseChatCount, useOwnedCharactersChatSum } from "@/lib/chat-counts";
 
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription,
@@ -124,7 +124,7 @@ function ProfilePage() {
     return () => { cancelled = true; };
   }, [uid, following.length, refetchTick]);
 
-  const ownerChatTotal = useOwnerChatTotal(uid, myChars.map((c) => c.id));
+  const ownerChatTotal = useOwnedCharactersChatSum(myChars.map((c) => c.id));
 
 
 
