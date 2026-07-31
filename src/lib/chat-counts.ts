@@ -110,6 +110,25 @@ export function useChatCount(charId: string): number {
   return baseChatCount(charId) + own;
 }
 
+// Sum of the exact chat counts shown on each of the owner's character cards.
+export function useOwnedCharactersChatSum(ownedIds: string[]): number {
+  const key = ownedIds.join(",");
+  const [live, setLive] = useState(0);
+
+  useEffect(() => {
+    let cancelled = false;
+    const ids = key ? key.split(",") : [];
+    if (ids.length === 0) { setLive(0); return; }
+    Promise.all(ids.map((id) => fetchOwn(id))).then((counts) => {
+      if (!cancelled) setLive(counts.reduce((a, b) => a + b, 0));
+    });
+    return () => { cancelled = true; };
+  }, [key]);
+
+  const base = (key ? key.split(",") : []).reduce((acc, id) => acc + baseChatCount(id), 0);
+  return base + live;
+}
+
 // Total conversations (across all users) with the characters owned by `ownerId`,
 // plus the deterministic baselines of any seeded characters they own.
 export function useOwnerChatTotal(ownerId: string | null, ownedIds: string[]): number {
