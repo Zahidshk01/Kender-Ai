@@ -16,7 +16,7 @@ import { useIsPro } from "@/lib/subscription";
 import { PremiumBadge } from "@/components/PremiumBadge";
 import { supabase } from "@/integrations/supabase/client";
 import { getUserFollowCounts } from "@/lib/user-follow";
-import { useChatCount, useLikeCount, useSaveCount, baseChatCount } from "@/lib/chat-counts";
+import { useChatCount, useLikeCount, useSaveCount, baseChatCount, useOwnerChatTotal } from "@/lib/chat-counts";
 
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription,
