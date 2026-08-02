@@ -140,17 +140,19 @@ function RootComponent() {
 }
 
 function AuthGate({ children }: { children: ReactNode }) {
-  const { session, loading } = useAuth();
+  const { session, loading, maybeSignedIn } = useAuth();
   const router = useRouter();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const publicPaths = ["/auth", "/privacy-policy", "/terms-of-service"];
 
   useEffect(() => {
     if (loading) return;
-    const publicPaths = ["/auth", "/privacy-policy", "/terms-of-service"];
-    if (!session && !publicPaths.includes(pathname)) {
+    // Don't bounce to /auth while a stored token is still being restored —
+    // that's what made returning users look like brand-new accounts.
+    if (!session && !maybeSignedIn && !publicPaths.includes(pathname)) {
       router.navigate({ to: "/auth", replace: true });
     }
-  }, [session, loading, pathname, router]);
+  }, [session, loading, maybeSignedIn, pathname, router]);
 
   useEffect(() => {
     if (!session?.user?.id) return;
@@ -159,17 +161,17 @@ function AuthGate({ children }: { children: ReactNode }) {
     });
   }, [session?.user?.id]);
 
-  if (loading) {
+  if (loading || (!session && maybeSignedIn && !publicPaths.includes(pathname))) {
     return (
       <div className="flex min-h-screen items-center justify-center">
         <Loader2 className="h-6 w-6 animate-spin text-white/60" />
       </div>
     );
   }
-  const publicPaths = ["/auth", "/privacy-policy", "/terms-of-service"];
   if (!session && !publicPaths.includes(pathname)) return null;
   return <>{children}</>;
 }
+
 
 function BottomNavGate() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });

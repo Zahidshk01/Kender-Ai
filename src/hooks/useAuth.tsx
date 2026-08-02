@@ -6,9 +6,17 @@ interface AuthCtx {
   session: Session | null;
   user: User | null;
   loading: boolean;
+  /** A stored token exists and the user never signed out explicitly. */
+  maybeSignedIn: boolean;
 }
 
-const Ctx = createContext<AuthCtx>({ session: null, user: null, loading: true });
+const Ctx = createContext<AuthCtx>({
+  session: null,
+  user: null,
+  loading: true,
+  maybeSignedIn: false,
+});
+
 
 // True if a Supabase auth token blob is still sitting in localStorage.
 // Used to avoid bouncing the user to /auth while a token refresh is in flight
@@ -38,14 +46,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     const { data: sub } = supabase.auth.onAuthStateChange((event, s) => {
       if (cancelled) return;
+      // Only an explicit sign-out clears the session. Everything else that
+      // reports "no session" is treated as transient (refresh in flight,
+      // offline, tab waking up) so the user is never bounced to /auth.
       if (event === "SIGNED_OUT") {
         signedOutRef.current = true;
         setSession(null);
         setLoading(false);
         return;
       }
-      // Ignore transient null sessions (refresh in-flight / network hiccup):
-      // never drop an existing session unless Supabase explicitly signs out.
       if (!s) {
         if (!hasStoredSession()) setLoading(false);
         return;
@@ -55,59 +64,58 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setLoading(false);
     });
 
-    (async () => {
-      const { data } = await supabase.auth.getSession();
-      if (cancelled) return;
-      if (data.session) {
-        setSession(data.session);
-        setLoading(false);
-        return;
-      }
-      // No in-memory session but a stored token exists -> the refresh probably
-      // failed transiently. Retry a few times with backoff before giving up.
-      if (hasStoredSession()) {
-        for (const delay of [0, 1000, 3000]) {
-          if (cancelled || signedOutRef.current) break;
-          if (delay) await new Promise((r) => setTimeout(r, delay));
-          const { data: refreshed } = await supabase.auth.refreshSession();
-          if (cancelled) return;
-          if (refreshed.session) {
-            setSession(refreshed.session);
-            setLoading(false);
-            return;
-          }
+    // getSession() already refreshes an expired token internally and it
+    // de-duplicates with the client's own auto-refresh timer. Calling
+    // refreshSession() ourselves in parallel rotated the refresh token twice,
+    // which Supabase treats as token reuse -> forced sign-out after a few
+    // hours/days offline. So we never call refreshSession() manually.
+    const load = async () => {
+      if (signedOutRef.current) return;
+      try {
+        const { data, error } = await supabase.auth.getSession();
+        if (cancelled) return;
+        if (data.session) {
+          signedOutRef.current = false;
+          setSession(data.session);
+        } else if (error && hasStoredSession()) {
+          // Network/refresh hiccup: keep whatever we already have and retry
+          // on the next wake-up instead of dropping the user.
+          return;
         }
-      }
-      if (!cancelled) setLoading(false);
-    })();
-
-    // Re-validate when the tab wakes up so long-idle sessions get refreshed
-    // instead of silently expiring.
-    const revalidate = async () => {
-      if (document.visibilityState !== "visible" || signedOutRef.current) return;
-      const { data } = await supabase.auth.getSession();
-      if (!cancelled && data.session) setSession(data.session);
-      else if (!cancelled && hasStoredSession()) {
-        const { data: r } = await supabase.auth.refreshSession();
-        if (!cancelled && r.session) setSession(r.session);
+      } catch {
+        /* offline: keep current state */
+      } finally {
+        if (!cancelled) setLoading(false);
       }
     };
+
+    void load();
+
+    // Re-validate when the tab wakes up or connectivity returns, so a
+    // long-idle session gets a fresh token instead of silently expiring.
+    const revalidate = () => {
+      if (document.visibilityState !== "visible") return;
+      void load();
+    };
     document.addEventListener("visibilitychange", revalidate);
-    window.addEventListener("online", revalidate);
+    window.addEventListener("online", () => void load());
+    window.addEventListener("focus", revalidate);
 
     return () => {
       cancelled = true;
       document.removeEventListener("visibilitychange", revalidate);
-      window.removeEventListener("online", revalidate);
+      window.removeEventListener("focus", revalidate);
       sub.subscription.unsubscribe();
     };
   }, []);
+  const maybeSignedIn = !!session || (!signedOutRef.current && hasStoredSession());
 
   return (
-    <Ctx.Provider value={{ session, user: session?.user ?? null, loading }}>
+    <Ctx.Provider value={{ session, user: session?.user ?? null, loading, maybeSignedIn }}>
       {children}
     </Ctx.Provider>
   );
+
 }
 
 export const useAuth = () => useContext(Ctx);
