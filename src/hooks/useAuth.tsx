@@ -108,13 +108,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       sub.subscription.unsubscribe();
     };
   }, []);
-
+  const maybeSignedIn = !!session || (!signedOutRef.current && hasStoredSession());
 
   return (
-    <Ctx.Provider value={{ session, user: session?.user ?? null, loading }}>
+    <Ctx.Provider value={{ session, user: session?.user ?? null, loading, maybeSignedIn }}>
       {children}
     </Ctx.Provider>
   );
+
 }
 
 export const useAuth = () => useContext(Ctx);
