@@ -6,9 +6,17 @@ interface AuthCtx {
   session: Session | null;
   user: User | null;
   loading: boolean;
+  /** A stored token exists and the user never signed out explicitly. */
+  maybeSignedIn: boolean;
 }
 
-const Ctx = createContext<AuthCtx>({ session: null, user: null, loading: true });
+const Ctx = createContext<AuthCtx>({
+  session: null,
+  user: null,
+  loading: true,
+  maybeSignedIn: false,
+});
+
 
 // True if a Supabase auth token blob is still sitting in localStorage.
 // Used to avoid bouncing the user to /auth while a token refresh is in flight
