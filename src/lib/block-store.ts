@@ -12,10 +12,11 @@ async function load() {
     emit();
     return;
   }
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from("user_blocks")
     .select("blocked_target")
     .eq("blocker_id", uid);
+  if (error) return;
   snapshot = (data ?? []).map((r: any) => r.blocked_target);
   emit();
 }
