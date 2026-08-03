@@ -56,7 +56,10 @@ if (typeof window !== "undefined") {
     loadFromDb();
   });
   supabase.auth.onAuthStateChange((_e, s) => {
-    uid = s?.user.id ?? null;
+    // Keep the last authenticated snapshot during an automatic token-refresh
+    // failure. The root auth provider owns explicit sign-out handling.
+    if (!s) return;
+    uid = s.user.id;
     loadFromDb();
   });
 }

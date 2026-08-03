@@ -29,7 +29,8 @@ if (typeof window !== "undefined") {
     loadFromDb();
   });
   supabase.auth.onAuthStateChange((_e, s) => {
-    uid = s?.user.id ?? null;
+    if (!s) return;
+    uid = s.user.id;
     loadFromDb();
   });
 }
