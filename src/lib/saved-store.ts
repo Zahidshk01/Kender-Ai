@@ -15,10 +15,11 @@ async function loadFromDb() {
     emit();
     return;
   }
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from("user_saves")
     .select("character_id")
     .eq("user_id", uid);
+  if (error) return;
   snapshot = (data ?? []).map((r) => r.character_id);
   emit();
 }
@@ -29,7 +30,8 @@ if (typeof window !== "undefined") {
     loadFromDb();
   });
   supabase.auth.onAuthStateChange((_e, s) => {
-    uid = s?.user.id ?? null;
+    if (!s) return;
+    uid = s.user.id;
     loadFromDb();
   });
 }

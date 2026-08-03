@@ -169,8 +169,8 @@ function start() {
   started = true;
 
   void refreshSubscription();
-  supabase.auth.onAuthStateChange(() => {
-    void refreshSubscription();
+  supabase.auth.onAuthStateChange((_event, session) => {
+    if (session) void refreshSubscription();
   });
 
   // Returning from the Stripe tab/redirect: re-check immediately.

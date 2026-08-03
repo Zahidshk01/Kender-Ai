@@ -22,21 +22,25 @@ async function loadFromDb() {
     emit();
     return;
   }
-  const [{ data: fList }, { data: followerRows }] = await Promise.all([
+  const [followingResult, followersResult] = await Promise.all([
     supabase.from("user_follows").select("handle").eq("user_id", uid),
     (supabase as any)
       .from("user_user_follows")
       .select("follower_id")
       .eq("followed_id", uid),
   ]);
+  if (followingResult.error || followersResult.error) return;
+  const fList = followingResult.data;
+  const followerRows = followersResult.data;
   followingSnap = (fList ?? []).map((r: any) => r.handle);
 
   const followerIds = (followerRows ?? []).map((r: any) => r.follower_id);
   if (followerIds.length > 0) {
-    const { data: profs } = await (supabase as any)
+    const { data: profs, error } = await (supabase as any)
       .from("profiles")
       .select("username")
       .in("id", followerIds);
+    if (error) return;
     followersSnap = (profs ?? [])
       .map((p: any) => p.username)
       .filter(Boolean)
@@ -85,7 +89,8 @@ if (typeof window !== "undefined") {
     setupRealtime();
   });
   supabase.auth.onAuthStateChange((_e, s) => {
-    uid = s?.user.id ?? null;
+    if (!s) return;
+    uid = s.user.id;
     loadFromDb();
     setupRealtime();
   });

@@ -31,11 +31,15 @@ async function loadFromDb() {
     emit();
     return;
   }
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from("profiles")
     .select("username, avatar_url, bio")
     .eq("id", uid)
     .maybeSingle();
+  // A wake-up request can briefly fail while the access token is refreshing.
+  // Preserve the last known profile instead of making an existing user look
+  // like a brand-new account with @you and zero activity.
+  if (error) return;
   if (data) {
     const rawName = data.username || "";
     snapshot = {
@@ -44,8 +48,6 @@ async function loadFromDb() {
       bio: data.bio || "",
       stats: { following: 0, followers: 0, interactions: 0 },
     };
-  } else {
-    snapshot = DEFAULT_PROFILE;
   }
   emit();
 }
@@ -56,7 +58,10 @@ if (typeof window !== "undefined") {
     loadFromDb();
   });
   supabase.auth.onAuthStateChange((_e, s) => {
-    uid = s?.user.id ?? null;
+    // Keep the last authenticated snapshot during an automatic token-refresh
+    // failure. The root auth provider owns explicit sign-out handling.
+    if (!s) return;
+    uid = s.user.id;
     loadFromDb();
   });
 }

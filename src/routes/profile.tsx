@@ -106,7 +106,9 @@ function ProfilePage() {
       })));
     }
     loadMine();
-    const { data: sub } = supabase.auth.onAuthStateChange(() => loadMine());
+    const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (session) void loadMine();
+    });
     return () => { cancelled = true; sub.subscription.unsubscribe(); };
   }, []);
 

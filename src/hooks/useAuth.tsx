@@ -2,6 +2,26 @@ import { createContext, useContext, useEffect, useRef, useState, type ReactNode 
 import type { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 
+const EXPLICIT_SIGN_OUT_KEY = "kender.explicit-sign-out";
+
+export function markExplicitSignOut() {
+  try {
+    sessionStorage.setItem(EXPLICIT_SIGN_OUT_KEY, "1");
+  } catch {
+    /* storage blocked */
+  }
+}
+
+function consumeExplicitSignOut() {
+  try {
+    const explicit = sessionStorage.getItem(EXPLICIT_SIGN_OUT_KEY) === "1";
+    sessionStorage.removeItem(EXPLICIT_SIGN_OUT_KEY);
+    return explicit;
+  } catch {
+    return false;
+  }
+}
+
 interface AuthCtx {
   session: Session | null;
   user: User | null;
@@ -40,19 +60,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
   const signedOutRef = useRef(false);
+  const refreshInFlightRef = useRef<Promise<void> | null>(null);
 
   useEffect(() => {
     let cancelled = false;
 
     const { data: sub } = supabase.auth.onAuthStateChange((event, s) => {
       if (cancelled) return;
-      // Only an explicit sign-out clears the session. Everything else that
-      // reports "no session" is treated as transient (refresh in flight,
-      // offline, tab waking up) so the user is never bounced to /auth.
       if (event === "SIGNED_OUT") {
-        signedOutRef.current = true;
-        setSession(null);
-        setLoading(false);
+        // SIGNED_OUT is also emitted after some automatic refresh failures.
+        // Only the Settings action is allowed to make that decision for the
+        // user; transient wake/network failures are handled by load() below.
+        if (consumeExplicitSignOut()) {
+          signedOutRef.current = true;
+          setSession(null);
+          setLoading(false);
+        }
         return;
       }
       if (!s) {
@@ -64,28 +87,48 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setLoading(false);
     });
 
-    // getSession() already refreshes an expired token internally and it
-    // de-duplicates with the client's own auto-refresh timer. Calling
-    // refreshSession() ourselves in parallel rotated the refresh token twice,
-    // which Supabase treats as token reuse -> forced sign-out after a few
-    // hours/days offline. So we never call refreshSession() manually.
     const load = async () => {
       if (signedOutRef.current) return;
-      try {
-        const { data, error } = await supabase.auth.getSession();
-        if (cancelled) return;
-        if (data.session) {
-          signedOutRef.current = false;
-          setSession(data.session);
-        } else if (error && hasStoredSession()) {
-          // Network/refresh hiccup: keep whatever we already have and retry
-          // on the next wake-up instead of dropping the user.
-          return;
+      if (refreshInFlightRef.current) return refreshInFlightRef.current;
+
+      const refresh = (async () => {
+        try {
+          const { data, error } = await supabase.auth.getSession();
+          if (cancelled) return;
+
+          let nextSession = data.session;
+          const expiresAtMs = (nextSession?.expires_at ?? 0) * 1000;
+          const needsRefresh = !!nextSession && expiresAtMs <= Date.now() + 60_000;
+
+          // Mobile browsers suspend refresh timers while the app is closed.
+          // Force exactly one refresh on wake when the stored access token is
+          // expired/near expiry. The shared promise prevents focus,
+          // visibilitychange and online events from rotating it concurrently.
+          if (needsRefresh) {
+            const refreshed = await supabase.auth.refreshSession();
+            if (cancelled) return;
+            if (refreshed.data.session) nextSession = refreshed.data.session;
+            else if (refreshed.error) return;
+          }
+
+          if (nextSession) {
+            signedOutRef.current = false;
+            setSession(nextSession);
+          } else if (error && hasStoredSession()) {
+            return;
+          }
+        } catch {
+          /* offline: keep current state and retry on the next wake-up */
+        } finally {
+          if (!cancelled) setLoading(false);
         }
-      } catch {
-        /* offline: keep current state */
+      })();
+
+      refreshInFlightRef.current = refresh;
+      try {
+        await refresh;
       } finally {
-        if (!cancelled) setLoading(false);
+        if (refreshInFlightRef.current === refresh) refreshInFlightRef.current = null;
       }
     };
 
@@ -97,13 +140,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (document.visibilityState !== "visible") return;
       void load();
     };
+    const handleOnline = () => void load();
     document.addEventListener("visibilitychange", revalidate);
-    window.addEventListener("online", () => void load());
+    window.addEventListener("online", handleOnline);
     window.addEventListener("focus", revalidate);
 
     return () => {
       cancelled = true;
       document.removeEventListener("visibilitychange", revalidate);
+      window.removeEventListener("online", handleOnline);
       window.removeEventListener("focus", revalidate);
       sub.subscription.unsubscribe();
     };
