@@ -13,6 +13,7 @@ import {
 import { toast } from "sonner";
 import { useBlockedTargets, unblockTarget } from "@/lib/block-store";
 import { avatarForHandle } from "@/lib/creator-meta";
+import { markExplicitSignOut } from "@/hooks/useAuth";
 
 export const Route = createFileRoute("/settings")({
   head: () => ({
@@ -46,6 +47,7 @@ function SettingsPage() {
   }, [confirm, fetchSummary]);
 
   async function handleSignOut() {
+    markExplicitSignOut();
     try { await supabase.auth.signOut(); } catch {}
     toast("Signed out");
     navigate({ to: "/" });
@@ -55,6 +57,7 @@ function SettingsPage() {
     setDeleting(true);
     try {
       await runDelete({} as never);
+      markExplicitSignOut();
       try { await supabase.auth.signOut(); } catch {}
       try {
         localStorage.removeItem("kender.profile");
