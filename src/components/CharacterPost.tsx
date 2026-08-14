@@ -8,7 +8,7 @@ import { toggleLiked, useIsLiked } from "@/lib/liked-store";
 import { toggleFollow, useIsFollowing } from "@/lib/follow-store";
 import { useOwnerProfile } from "@/lib/owner-profile";
 import { avatarForHandle } from "@/lib/creator-meta";
-import { useChatCount, baseLikeCount } from "@/lib/chat-counts";
+import { useChatCount, useLikeCount } from "@/lib/chat-counts";
 import { PremiumBadge } from "@/components/PremiumBadge";
 
 
