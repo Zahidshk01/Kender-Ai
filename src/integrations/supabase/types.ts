@@ -478,6 +478,15 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      character_stats: {
+        Args: { _ids: string[] }
+        Returns: {
+          character_id: string
+          chats: number
+          likes: number
+          saves: number
+        }[]
+      }
       check_chat_rate_limit: {
         Args: { _key: string; _limit: number; _window_seconds: number }
         Returns: boolean
