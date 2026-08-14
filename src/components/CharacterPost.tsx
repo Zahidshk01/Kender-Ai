@@ -23,14 +23,12 @@ export function CharacterPost({ char }: { char: Character }) {
   const saved = useIsSaved(char.id);
   const liked = useIsLiked(char.id);
   const following = useIsFollowing(char.creator);
-  const [likeDelta, setLikeDelta] = useState(0);
-  const likes = baseLikeCount(char.id) + likeDelta;
+  const likes = useLikeCount(char.id);
   const comments = useChatCount(char.id);
 
 
   const toggleLike = async () => {
-    const nowLiked = await toggleLiked(char.id);
-    setLikeDelta((n) => n + (nowLiked ? 1 : -1));
+    await toggleLiked(char.id);
   };
 
   const onSave = async () => {
