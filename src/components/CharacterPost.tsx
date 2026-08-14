@@ -1,4 +1,4 @@
-import { useState } from "react";
+
 import { useNavigate, Link } from "@tanstack/react-router";
 import { Heart, MessageCircle, Bookmark } from "lucide-react";
 import { toast } from "sonner";
@@ -8,7 +8,7 @@ import { toggleLiked, useIsLiked } from "@/lib/liked-store";
 import { toggleFollow, useIsFollowing } from "@/lib/follow-store";
 import { useOwnerProfile } from "@/lib/owner-profile";
 import { avatarForHandle } from "@/lib/creator-meta";
-import { useChatCount, baseLikeCount } from "@/lib/chat-counts";
+import { useChatCount, useLikeCount } from "@/lib/chat-counts";
 import { PremiumBadge } from "@/components/PremiumBadge";
 
 
@@ -23,14 +23,12 @@ export function CharacterPost({ char }: { char: Character }) {
   const saved = useIsSaved(char.id);
   const liked = useIsLiked(char.id);
   const following = useIsFollowing(char.creator);
-  const [likeDelta, setLikeDelta] = useState(0);
-  const likes = baseLikeCount(char.id) + likeDelta;
+  const likes = useLikeCount(char.id);
   const comments = useChatCount(char.id);
 
 
   const toggleLike = async () => {
-    const nowLiked = await toggleLiked(char.id);
-    setLikeDelta((n) => n + (nowLiked ? 1 : -1));
+    await toggleLiked(char.id);
   };
 
   const onSave = async () => {
