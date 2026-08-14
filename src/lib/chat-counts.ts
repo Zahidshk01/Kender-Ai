@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { isSeededCharacter } from "@/lib/new-user";
 
 // Deterministic base count derived from character id, so it never changes
-// between refreshes. Increments only when the user actually chats.
+// between refreshes. Increments only when users actually chat.
 export function baseChatCount(id: string): number {
   if (!isSeededCharacter(id)) return 0;
   let h = 2166136261;
@@ -35,79 +35,94 @@ export function baseSaveCount(id: string): number {
   return 200 + (hashSalt(id, "saves") % 3800);
 }
 
-async function fetchCount(table: string, charId: string): Promise<number> {
-  const { count } = await (supabase as any)
-    .from(table)
-    .select("user_id", { count: "exact", head: true })
-    .eq("character_id", charId);
-  return count ?? 0;
-}
+// ---------------------------------------------------------------------------
+// Global (all users) engagement stats, read through a security-definer RPC so
+// every visitor sees the same live like / save / chat totals.
+// ---------------------------------------------------------------------------
 
-export function useLikeCount(charId: string): number {
-  const [own, setOwn] = useState(0);
-  useEffect(() => {
-    let cancelled = false;
-    fetchCount("user_likes", charId).then((n) => !cancelled && setOwn(n));
-    return () => { cancelled = true; };
-  }, [charId]);
-  return baseLikeCount(charId) + own;
-}
+export type CharacterStats = { likes: number; saves: number; chats: number };
 
-export function useSaveCount(charId: string): number {
-  const [own, setOwn] = useState(0);
-  useEffect(() => {
-    let cancelled = false;
-    fetchCount("user_saves", charId).then((n) => !cancelled && setOwn(n));
-    return () => { cancelled = true; };
-  }, [charId]);
-  return baseSaveCount(charId) + own;
-}
+const EMPTY: CharacterStats = { likes: 0, saves: 0, chats: 0 };
 
-const cache = new Map<string, number>();
+const cache = new Map<string, CharacterStats>();
+const inflight = new Map<string, Promise<CharacterStats>>();
 const listeners = new Set<() => void>();
 
 function notify() {
   listeners.forEach((l) => l());
 }
 
-async function fetchOwn(charId: string): Promise<number> {
-  const { count } = await (supabase as any)
-    .from("chat_messages")
-    .select("id", { count: "exact", head: true })
-    .eq("character_id", charId);
-  return count ?? 0;
+async function fetchStats(ids: string[]): Promise<Map<string, CharacterStats>> {
+  const out = new Map<string, CharacterStats>();
+  if (ids.length === 0) return out;
+  const { data } = await (supabase as any).rpc("character_stats", { _ids: ids });
+  for (const row of (data ?? []) as any[]) {
+    out.set(String(row.character_id), {
+      likes: Number(row.likes ?? 0),
+      saves: Number(row.saves ?? 0),
+      chats: Number(row.chats ?? 0),
+    });
+  }
+  for (const id of ids) if (!out.has(id)) out.set(id, EMPTY);
+  return out;
 }
 
-export async function refreshChatCount(charId: string) {
-  const n = await fetchOwn(charId);
-  cache.set(charId, n);
-  notify();
-  return n;
+function loadStats(id: string): Promise<CharacterStats> {
+  const existing = inflight.get(id);
+  if (existing) return existing;
+  const p = fetchStats([id])
+    .then((m) => {
+      const stats = m.get(id) ?? EMPTY;
+      cache.set(id, stats);
+      notify();
+      return stats;
+    })
+    .finally(() => inflight.delete(id));
+  inflight.set(id, p);
+  return p;
 }
 
-export function useChatCount(charId: string): number {
-  const [own, setOwn] = useState<number>(() => cache.get(charId) ?? 0);
+/** Re-read the global counters for a character (call after like/save/chat). */
+export async function refreshStats(id: string) {
+  if (!id) return EMPTY;
+  inflight.delete(id);
+  return loadStats(id);
+}
+
+/** Back-compat alias used after sending a chat message. */
+export const refreshChatCount = refreshStats;
+
+function useStats(id: string): CharacterStats {
+  const [stats, setStats] = useState<CharacterStats>(() => cache.get(id) ?? EMPTY);
 
   useEffect(() => {
+    if (!id) return;
     let cancelled = false;
     const listener = () => {
-      if (!cancelled) setOwn(cache.get(charId) ?? 0);
+      if (!cancelled) setStats(cache.get(id) ?? EMPTY);
     };
     listeners.add(listener);
-    if (!cache.has(charId)) {
-      fetchOwn(charId).then((n) => {
-        if (cancelled) return;
-        cache.set(charId, n);
-        setOwn(n);
-      });
-    }
+    setStats(cache.get(id) ?? EMPTY);
+    if (!cache.has(id)) loadStats(id);
     return () => {
       cancelled = true;
       listeners.delete(listener);
     };
-  }, [charId]);
+  }, [id]);
 
-  return baseChatCount(charId) + own;
+  return stats;
+}
+
+export function useLikeCount(charId: string): number {
+  return baseLikeCount(charId) + useStats(charId).likes;
+}
+
+export function useSaveCount(charId: string): number {
+  return baseSaveCount(charId) + useStats(charId).saves;
+}
+
+export function useChatCount(charId: string): number {
+  return baseChatCount(charId) + useStats(charId).chats;
 }
 
 // Sum of the exact chat counts shown on each of the owner's character cards.
@@ -118,11 +133,23 @@ export function useOwnedCharactersChatSum(ownedIds: string[]): number {
   useEffect(() => {
     let cancelled = false;
     const ids = key ? key.split(",") : [];
-    if (ids.length === 0) { setLive(0); return; }
-    Promise.all(ids.map((id) => fetchOwn(id))).then((counts) => {
-      if (!cancelled) setLive(counts.reduce((a, b) => a + b, 0));
+    if (ids.length === 0) {
+      setLive(0);
+      return;
+    }
+    fetchStats(ids).then((m) => {
+      if (cancelled) return;
+      let sum = 0;
+      m.forEach((s, id) => {
+        cache.set(id, s);
+        sum += s.chats;
+      });
+      notify();
+      setLive(sum);
     });
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [key]);
 
   const base = (key ? key.split(",") : []).reduce((acc, id) => acc + baseChatCount(id), 0);
