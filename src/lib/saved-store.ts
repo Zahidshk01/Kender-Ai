@@ -43,11 +43,13 @@ export async function toggleSaved(id: string) {
     snapshot = snapshot.filter((x) => x !== id);
     emit();
     await supabase.from("user_saves").delete().eq("user_id", uid).eq("character_id", id);
+    void import("@/lib/chat-counts").then((m) => m.refreshStats(id));
     return false;
   } else {
     snapshot = [...snapshot, id];
     emit();
     await supabase.from("user_saves").insert({ user_id: uid, character_id: id });
+    void import("@/lib/chat-counts").then((m) => m.refreshStats(id));
     return true;
   }
 }
