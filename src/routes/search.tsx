@@ -52,19 +52,6 @@ function SearchPage() {
     };
   }, [q]);
 
-  useEffect(() => {
-    (async () => {
-      const { data } = await (supabase as any)
-        .from("characters")
-        .select("*")
-        .order("sort_order", { ascending: true });
-      if (data) {
-        setItems(
-          (data as Character[]).map((c) => ({ ...c, image: resolveImage(c.id, c.image) })),
-        );
-      }
-    })();
-  }, []);
 
   const results = items.filter((c) => {
     if (c.owner_id && blocked.includes(c.owner_id)) return false;
