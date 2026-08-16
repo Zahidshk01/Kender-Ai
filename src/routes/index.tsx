@@ -26,49 +26,10 @@ export const Route = createFileRoute("/")({
   component: HomePage,
 });
 
-type Character = {
-  id: string;
-  name: string;
-  image: string | null;
-  creator: string | null;
-  chats: string | null;
-  category: string | null;
-  height: number | null;
-  tagline: string | null;
-  relation: string | null;
-  persona?: string | null;
-  first_message?: string | null;
-  owner_id?: string | null;
-};
-
 function HomePage() {
-  const [characters, setCharacters] = useState<Character[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { data: characters = [], isLoading: loading } = useQuery(charactersQuery(true));
   const blocked = useBlockedTargets();
   const isPro = useIsPro();
-
-
-  useEffect(() => {
-    async function loadCharacters() {
-      const { data, error } = await (supabase as any)
-        .from("characters")
-        .select("*")
-        .eq("visibility", "public")
-        .order("sort_order", { ascending: true });
-
-      if (!error && data) {
-        const withImages = (data as Character[]).map((c) => ({
-          ...c,
-          image: c.image || imageById.get(c.id) || null,
-        }));
-        setCharacters(withImages);
-      }
-
-      setLoading(false);
-    }
-
-    loadCharacters();
-  }, []);
 
   const feed = characters.filter((c) => {
     if (c.owner_id && blocked.includes(c.owner_id)) return false;
