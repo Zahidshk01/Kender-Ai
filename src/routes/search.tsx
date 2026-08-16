@@ -1,9 +1,9 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { Search, MessageSquare, X } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import type { Character } from "@/lib/character";
-import { resolveImage } from "@/lib/character-images";
+import { charactersQuery } from "@/lib/characters-query";
 import { useBlockedTargets } from "@/lib/block-store";
 import { PremiumBadge } from "@/components/PremiumBadge";
 
