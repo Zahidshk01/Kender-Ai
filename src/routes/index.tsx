@@ -1,14 +1,11 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Bell } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
 import { CharacterPost } from "@/components/CharacterPost";
-import { useEffect, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
-import { characters as localCharacters } from "@/lib/mock-data";
+import { charactersQuery } from "@/lib/characters-query";
 import { useBlockedTargets } from "@/lib/block-store";
 import { useIsPro } from "@/lib/subscription";
 
-
-const imageById = new Map(localCharacters.map((c) => [c.id, c.image]));
 
 export const Route = createFileRoute("/")({
   head: () => ({
