@@ -173,12 +173,19 @@ function start() {
     if (session) void refreshSubscription();
   });
 
-  // Returning from the Stripe tab/redirect: re-check immediately.
-  window.addEventListener("focus", () => void refreshSubscription());
+  // Returning from the Stripe tab/redirect: re-check — but at most once every
+  // 20s, so tab switching doesn't fire a burst of identical requests.
+  let lastWake = Date.now();
+  const wakeRefresh = () => {
+    if (Date.now() - lastWake < 20_000) return;
+    lastWake = Date.now();
+    void refreshSubscription();
+  };
+  window.addEventListener("focus", wakeRefresh);
   document.addEventListener("visibilitychange", () => {
-    if (document.visibilityState === "visible") void refreshSubscription();
+    if (document.visibilityState === "visible") wakeRefresh();
   });
-  window.addEventListener("pageshow", () => void refreshSubscription());
+  window.addEventListener("pageshow", wakeRefresh);
 }
 
 export function useSubscription(): SubscriptionState {

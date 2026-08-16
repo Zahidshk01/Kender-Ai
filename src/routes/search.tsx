@@ -1,9 +1,9 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { Search, MessageSquare, X } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import type { Character } from "@/lib/character";
-import { resolveImage } from "@/lib/character-images";
+import { charactersQuery } from "@/lib/characters-query";
 import { useBlockedTargets } from "@/lib/block-store";
 import { PremiumBadge } from "@/components/PremiumBadge";
 
@@ -27,7 +27,7 @@ export const Route = createFileRoute("/search")({
 
 function SearchPage() {
   const [q, setQ] = useState("");
-  const [items, setItems] = useState<Character[]>([]);
+  const { data: items = [] } = useQuery(charactersQuery(false));
   const [users, setUsers] = useState<UserRow[]>([]);
   const blocked = useBlockedTargets();
 
@@ -52,19 +52,6 @@ function SearchPage() {
     };
   }, [q]);
 
-  useEffect(() => {
-    (async () => {
-      const { data } = await (supabase as any)
-        .from("characters")
-        .select("*")
-        .order("sort_order", { ascending: true });
-      if (data) {
-        setItems(
-          (data as Character[]).map((c) => ({ ...c, image: resolveImage(c.id, c.image) })),
-        );
-      }
-    })();
-  }, []);
 
   const results = items.filter((c) => {
     if (c.owner_id && blocked.includes(c.owner_id)) return false;

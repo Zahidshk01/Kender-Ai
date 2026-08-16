@@ -68,7 +68,10 @@ function ChatsPage() {
       .from("chat_messages")
       .select("character_id, content, created_at, role")
       .eq("user_id", uid)
-      .order("created_at", { ascending: false });
+      .order("created_at", { ascending: false })
+      // Only the newest slice is needed to build the conversation list —
+      // pulling the entire message history made this page slow to open.
+      .limit(300);
     if (!msgs) {
       setChats([]);
       setLoading(false);
