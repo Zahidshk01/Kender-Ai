@@ -27,7 +27,7 @@ export const Route = createFileRoute("/search")({
 
 function SearchPage() {
   const [q, setQ] = useState("");
-  const [items, setItems] = useState<Character[]>([]);
+  const { data: items = [] } = useQuery(charactersQuery(false));
   const [users, setUsers] = useState<UserRow[]>([]);
   const blocked = useBlockedTargets();
 
