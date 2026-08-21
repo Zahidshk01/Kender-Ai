@@ -23,8 +23,14 @@ export const Route = createFileRoute("/create")({
 });
 
 const nameSamples = [
-  "Luna Nightshade", "Kai Ember", "Selene Vox", "Orion Frost",
-  "Rhea Hollow", "Jett Marlowe", "Aria Wraith", "Cassian Vale",
+  "Luna Nightshade",
+  "Kai Ember",
+  "Selene Vox",
+  "Orion Frost",
+  "Rhea Hollow",
+  "Jett Marlowe",
+  "Aria Wraith",
+  "Cassian Vale",
 ];
 
 function CreatePage() {
@@ -61,7 +67,6 @@ function CreatePage() {
     reader.readAsDataURL(file);
   }
 
-
   function openAiPrompt() {
     setShowImageMenu(false);
     setPromptOpen(true);
@@ -88,18 +93,22 @@ function CreatePage() {
         if (json.code === "limit_reached") {
           toast.error("Limit reached — GET PRO", {
             description: json.error,
-            action: { label: "Get Pro", onClick: () => { window.location.href = "/premium"; } },
+            action: {
+              label: "Get Pro",
+              onClick: () => {
+                window.location.href = "/premium";
+              },
+            },
           });
         } else if (res.status === 429) toast("Rate limit hit. Try again in a moment.");
         else if (res.status === 402) toast("Out of AI credits. Add funds to continue.");
         else toast(json.error || "Couldn't generate image");
       } else {
-
         setImage(json.image);
         if (json.fellBack && json.modelLabel) {
           toast(`Switched to ${json.modelLabel} — primary model unavailable`);
         } else {
-          toast("Anime portrait generated");
+          toast("Image generated");
         }
       }
     } catch {
@@ -170,11 +179,7 @@ function CreatePage() {
     if (!owner_id) return toast("Please sign in first");
     // Never derive the public creator handle from the email address — that
     // would publish part of every creator's email on the feed.
-    const { data: prof } = await (supabase as any)
-      .from("profiles")
-      .select("username")
-      .eq("id", owner_id)
-      .maybeSingle();
+    const { data: prof } = await (supabase as any).from("profiles").select("username").eq("id", owner_id).maybeSingle();
     const handle = prof?.username ? `@${String(prof.username).replace(/^@/, "")}` : "@you";
     const id = crypto.randomUUID();
     const { error } = await (supabase as any).from("characters").insert({
@@ -278,13 +283,7 @@ function CreatePage() {
               </div>
             )}
           </div>
-          <input
-            ref={fileRef}
-            type="file"
-            accept="image/*"
-            hidden
-            onChange={(e) => onUpload(e.target.files?.[0])}
-          />
+          <input ref={fileRef} type="file" accept="image/*" hidden onChange={(e) => onUpload(e.target.files?.[0])} />
         </section>
 
         {/* Name field */}
@@ -358,7 +357,9 @@ function CreatePage() {
                     active ? "ring-1 ring-primary" : ""
                   }`}
                 >
-                  <div className={`grid h-11 w-11 shrink-0 place-items-center rounded-2xl ${active ? "bg-primary/15 text-primary" : "bg-surface-2 text-muted-foreground"}`}>
+                  <div
+                    className={`grid h-11 w-11 shrink-0 place-items-center rounded-2xl ${active ? "bg-primary/15 text-primary" : "bg-surface-2 text-muted-foreground"}`}
+                  >
                     <Icon className="h-5 w-5" />
                   </div>
                   <div className="flex-1">
@@ -406,9 +407,7 @@ function CreatePage() {
               </div>
               <h2 className="text-lg font-bold">Generate image</h2>
             </div>
-            <p className="mb-3 text-sm text-muted-foreground">
-              Describe your character — looks, vibe, outfit, mood.
-            </p>
+            <p className="mb-3 text-sm text-muted-foreground">Describe your character — looks, vibe, outfit, mood.</p>
             <form
               onSubmit={(e) => {
                 e.preventDefault();
